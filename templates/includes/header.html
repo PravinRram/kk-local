@@ -1,0 +1,43 @@
+<header class="kk-topbar d-flex align-items-center px-3 py-2 border-bottom bg-white fixed-top">
+  <div class="d-flex align-items-center">
+    {% if request.endpoint == 'events.events_detail' %}
+    <a href="javascript:history.back()" class="btn d-md-none me-2 p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm splash-in" style="width: 35px; height: 35px; background-color: #F06B42; color: white;">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
+    {% else %}
+    <button class="btn btn-link text-dark d-md-none me-2 p-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
+      <i class="bi bi-list fs-2"></i>
+    </button>
+    {% endif %}
+    <a href="{{ url_for('events.events') }}" class="me-3 text-decoration-none">
+      <img src="{{ url_for('events.logo_png') }}" class="kk-logo-img" alt="Logo">
+    </a>
+    <form class="kk-search me-3 d-none d-md-block" method="get" action="{{ url_for('events.events') }}" style="width: 300px;">
+      <div class="input-group">
+        <span class="input-group-text border-0 bg-transparent ps-3"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-0 bg-transparent shadow-none" name="q" placeholder="Search KampongKonek" value="{{ q|default('') }}">
+        {% if date_filter %}<input type="hidden" name="date" value="{{ date_filter }}">{% endif %}
+        {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
+      </div>
+    </form>
+  </div>
+  <div class="kk-title text-center fw-bold position-absolute start-50 translate-middle-x">KampongKonek</div>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <a href="#" class="btn btn-light border rounded-circle kk-icon-btn"><i class="bi bi-bell-fill text-kk-primary"></i></a>
+    <div class="dropdown">
+      <a href="#" class="btn btn-light border rounded-circle kk-icon-btn" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-person-fill text-kk-primary"></i>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li class="dropdown-header">Switch Account</li>
+        {% for u in all_users %}
+        <li>
+          <a class="dropdown-item {% if current_user.user_id == u[0] %}active{% endif %}" href="{{ url_for('events.switch_user', user_id=u[0]) }}">
+            {{ u[1] }} <small class="text-muted">({{ u[2] }})</small>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</header>

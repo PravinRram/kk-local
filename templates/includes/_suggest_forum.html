@@ -1,0 +1,57 @@
+{% if suggested_forums %}
+<div class="mt-4 carousel-wrapper">
+    <h6>Suggested Forums</h6>
+    <div id="forumCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+        <div class="carousel-inner">
+            {% for forum in suggested_forums %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="forum-carousel-card" onclick="window.location.href='{{ url_for('forum.forum_detail', forum_id=forum.id) }}'">
+                    {% if forum.banner %}
+                    <img src="{{ forum.banner }}" class="forum-carousel-banner" alt="{{ forum.name }}">
+                    {% else %}
+                    <div class="forum-carousel-banner forum-carousel-banner-default"></div>
+                    {% endif %}
+                    <div class="forum-carousel-content">
+                        <h6 class="forum-carousel-title">
+                            {{ forum.name[:50] }}{% if forum.name|length > 50 %}...{% endif %}
+                        </h6>
+                        <p class="forum-carousel-description">
+                            {{ forum.description[:80] }}{% if forum.description|length > 80 %}...{% endif %}
+                        </p>
+                        <div class="forum-carousel-meta">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                            </small>
+                        </div>
+                        <div class="forum-carousel-actions" onclick="event.stopPropagation()">
+                            <form method="POST" action="{{ url_for('forum.join_forum', forum_id=forum.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary w-100 mb-1">
+                                    <span class="material-symbols-outlined">add</span> Join
+                                </button>
+                            </form>
+                            <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
+                                class="btn btn-sm btn-secondary w-100">
+                                <span class="material-symbols-outlined">info</span> Learn More
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="mt-4">
+    <h6 class="mb-3">
+        <span class="material-symbols-outlined">explore</span> Suggested Forums
+    </h6>
+    <div class="no-suggestions-card">
+        <span class="material-symbols-outlined no-suggestions-icon">search_off</span>
+        <p class="no-suggestions-text">No suggested forums at the moment.</p>
+        <a href="{{ url_for('forums') }}" class="btn btn-sm btn-outline-primary">
+            <span class="material-symbols-outlined">explore</span> Browse All Forums
+        </a>
+    </div>
+</div>
+{% endif %}

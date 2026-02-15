@@ -1,0 +1,369 @@
+{% extends "events/base.html" %}
+
+{% block content %}
+<style>
+  /* Banner Container for Blurred Background Effect */
+   .banner-container {
+     position: relative;
+     width: 100%;
+     height: 350px;
+     background-color: #000;
+     border-radius: 12px;
+     overflow: hidden;
+     margin-bottom: 2rem;
+   }
+  
+  .banner-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(20px);
+    opacity: 0.8;
+  }
+  
+  .banner-image {
+    position: relative;
+    height: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    display: block;
+    object-fit: contain;
+    z-index: 1;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  /* Image 1 Date Box Style */
+  .calendar-icon {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    text-align: center;
+    border: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+  }
+  .calendar-top-strip {
+    height: 8px;
+    background: #dc3545; /* Red strip */
+    width: 100%;
+  }
+  .calendar-day {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+    line-height: 1.2;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  @media (max-width: 768px) {
+    .banner-container {
+      height: 200px;
+    }
+    .banner-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+</style>
+
+{% set banner_image = event.image_url if event.image_url else 'https://images.unsplash.com/photo-1521335629791-ce4aecadf3ff?w=1200&q=80&auto=format&fit=crop' %}
+
+<div class="container pb-5">
+  <!-- Blurred Background Banner -->
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <div class="banner-container">
+         <div class="banner-background" style="background-image: url('{{ banner_image }}');"></div>
+         <img src="{{ banner_image }}" 
+              class="banner-image" alt="{{ event.event_name }}">
+      </div>
+      
+      <!-- Header Section -->
+      <div class="mb-4 pb-3 border-bottom">
+        <div class="d-flex justify-content-between align-items-end mb-3">
+          <!-- Left: DateBox + Title + Info -->
+          <div class="d-flex gap-3">
+            <div class="calendar-icon d-none d-md-flex">
+              <div class="calendar-top-strip"></div>
+              <div class="calendar-day">{{ event.start_date_obj.day if event.start_date_obj else '?' }}</div>
+            </div>
+            <div>
+              <div class="text-danger fw-bold small">
+                {{ event.date_range_str }}
+              </div>
+              <h1 class="fw-bold mb-1">{{ event.event_name }}</h1>
+              <div class="text-muted">{{ event.location }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar: Tabs Left, Actions Right -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+             <!-- Tabs -->
+             <div class="d-flex gap-4 w-100 w-md-auto justify-content-center justify-content-md-start">
+                 <a href="#" class="text-decoration-none fw-bold text-primary border-bottom border-primary border-3 pb-2">About</a>
+                 <a href="#" class="text-decoration-none text-muted fw-bold pb-2">Discussion</a>
+             </div>
+
+             <!-- Action Buttons -->
+             <div class="d-flex gap-2">
+                 {% if user_status == 'going' %}
+                    <!-- Interested Button (Inactive style but accessible) -->
+                    <a href="{{ url_for('events.events_interested', event_id=event.event_id) }}" class="btn btn-light border fw-bold d-flex align-items-center justify-content-center">
+                        <i class="bi bi-star me-0 me-sm-2"></i><span class="d-none d-sm-inline">Interested</span>
+                    </a>
+                    
+                    <!-- Going Button (Active) -->
+                    <button type="button" class="btn btn-light border text-primary fw-bold d-flex align-items-center justify-content-center"
+                            data-leave-url="{{ url_for('events.events_leave', event_id=event.event_id) }}"
+                            data-event-title="{{ event.event_name }}"
+                            onclick="confirmLeave(this.getAttribute('data-leave-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-check-circle-fill me-0 me-sm-2"></i><span class="d-none d-sm-inline">Going</span>
+                    </button>
+                 {% else %}
+                    <!-- Interested Button -->
+                    {% if user_status == 'interested' %}
+                        <a href="{{ url_for('events.events_interested', event_id=event.event_id) }}" class="btn btn-light border text-primary fw-bold d-flex align-items-center justify-content-center">
+                          <i class="bi bi-star-fill me-0 me-sm-2"></i><span class="d-none d-sm-inline">Interested</span>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('events.events_interested', event_id=event.event_id) }}" class="btn btn-light border fw-bold d-flex align-items-center justify-content-center">
+                          <i class="bi bi-star me-0 me-sm-2"></i><span class="d-none d-sm-inline">Interested</span>
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Going Button (Inactive) -->
+                    <button type="button" class="btn btn-light border fw-bold d-flex align-items-center justify-content-center" 
+                            data-join-url="{{ url_for('events.events_join', event_id=event.event_id) }}"
+                            data-event-title="{{ event.event_name }}"
+                            onclick="confirmJoin(this.getAttribute('data-join-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-check-circle me-0 me-sm-2"></i><span class="d-none d-sm-inline">Going</span>
+                    </button>
+                 {% endif %}
+                 
+                 <button class="btn btn-light border fw-bold d-flex align-items-center justify-content-center"><i class="bi bi-envelope-fill me-0 me-sm-2"></i><span class="d-none d-sm-inline">Invite</span></button>
+                 <button class="btn btn-light border" 
+                         data-share-url="{{ url_for('events.events_detail', event_code=event.event_code) }}"
+                         onclick="openShareModal(this.getAttribute('data-share-url'))">
+                    <i class="bi bi-share-fill"></i>
+                 </button>
+                 
+                 <div class="dropdown d-inline-block">
+                    <button class="btn btn-light border" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="https://calendar.google.com/calendar/render?action=TEMPLATE&text={{ event.event_name | urlencode }}&dates={{ event.start_date | replace('-','') }}T{{ event.start_time | replace(':','') }}00/{{ event.end_date | replace('-','') }}T{{ event.end_time | replace(':','') }}00&details={{ event.description | urlencode }}&location={{ event.location | urlencode }}" target="_blank">
+                                <i class="bi bi-calendar-plus me-2"></i>Add to Calendar
+                            </a>
+                        </li>
+                        {% if current_user.user_id == event.host_id %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="#" 
+                               data-edit-url="{{ url_for('events.events_edit', event_id=event.event_id) }}"
+                               data-event-name="{{ event.event_name }}"
+                               data-event-type="{{ event.event_type }}"
+                               data-event-visibility="{{ event.visibility }}"
+                               data-group-chat="{{ 'true' if event.enable_group_chat else 'false' }}"
+                               data-minigames="{{ 'true' if event.enable_minigames else 'false' }}"
+                               data-event-description="{{ event.description or '' }}"
+                               onclick="openEditEventModal(
+                                   this.getAttribute('data-edit-url'),
+                                   this.getAttribute('data-event-name'),
+                                   this.getAttribute('data-event-type'),
+                                   this.getAttribute('data-event-visibility'),
+                                   this.getAttribute('data-group-chat') === 'true',
+                                   this.getAttribute('data-minigames') === 'true',
+                                   this.getAttribute('data-event-description')
+                               ); return false;">
+                                <i class="bi bi-pencil me-2"></i>Edit Event
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" 
+                               data-delete-url="{{ url_for('events.events_delete', event_id=event.event_id) }}"
+                               onclick="confirmDeleteEvent(this.getAttribute('data-delete-url')); return false;">
+                                <i class="bi bi-trash me-2"></i>Delete Event
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                 </div>
+             </div>
+        </div>
+      </div>
+
+      <!-- Main Content Row -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+           <!-- Floated Sidebar Wrapper (Map + Users) -->
+           <div class="float-md-end ms-md-4 mb-4" style="width: 100%; max-width: 450px;">
+              <!-- Map -->
+              <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+                 <iframe 
+                    width="100%" 
+                    height="350" 
+                    frameborder="0" 
+                    style="border:0" 
+                    src="https://maps.google.com/maps?q={{ event.location }}&t=&z=13&ie=UTF8&iwloc=&output=embed" 
+                    allowfullscreen>
+                 </iframe>
+                 <div class="card-body border-top">
+                   <h6 class="fw-bold mb-1">{{ event.location }}</h6>
+                 </div>
+              </div>
+
+              <!-- Users/Guests -->
+              <div class="card border shadow-sm">
+                <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                  <h5 class="fw-bold mb-0">Users</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row text-center">
+                    <div class="col-6">
+                      <h5 class="fw-bold mb-0">{{ counts.going }}</h5>
+                      <small class="text-muted">Going</small>
+                    </div>
+                    <div class="col-6">
+                      <h5 class="fw-bold mb-0">{{ counts.interested }}</h5>
+                      <small class="text-muted">Interested</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+           </div>
+
+           <!-- Details Content -->
+           <h5 class="fw-bold mb-3">Details</h5>
+              
+           <div class="d-flex mb-3">
+             <div style="width: 24px; flex-shrink: 0;" class="me-2">
+                <i class="bi bi-people-fill fs-5 text-muted"></i>
+             </div>
+             <div class="align-self-center">
+                {{ counts.going + counts.interested }} people responded
+             </div>
+           </div>
+           
+           <div class="d-flex mb-3">
+             <div style="width: 24px; flex-shrink: 0;" class="me-2">
+                <i class="bi bi-person-fill fs-5 text-muted"></i>
+             </div>
+             <div class="align-self-center">
+                Event by <strong>{{ event.host_name if event.host_name else 'KampongKonek' }}</strong>
+             </div>
+           </div>
+           
+           <div class="d-flex mb-3">
+             <div style="width: 24px; flex-shrink: 0;" class="me-2">
+                <i class="bi bi-geo-alt-fill fs-5 text-muted"></i>
+             </div>
+             <div>
+                {{ event.location }}
+             </div>
+           </div>
+           
+           {% if event.duration %}
+           <div class="d-flex mb-3">
+             <div style="width: 24px; flex-shrink: 0;" class="me-2">
+                <i class="bi bi-clock-fill fs-5 text-muted"></i>
+             </div>
+             <div class="align-self-center">
+                Duration: {{ event.duration }}
+             </div>
+           </div>
+           {% endif %}
+           
+           <div class="d-flex mb-4">
+             <div style="width: 24px; flex-shrink: 0;" class="me-2">
+                <i class="bi bi-globe fs-5 text-muted"></i>
+             </div>
+             <div class="align-self-center">
+                {{ event.visibility|capitalize }}
+             </div>
+           </div>
+           
+           <p class="card-text text-break" style="white-space: pre-wrap;">{{ event.description }}</p>
+           
+           {% if event.interest_tags %}
+           <div class="mt-4">
+             {% for tag in event.interest_tags.split(',') %}
+               {% if tag.strip() %}
+                 <span class="badge bg-light text-dark border me-1">{{ tag.strip() }}</span>
+               {% endif %}
+             {% endfor %}
+           </div>
+           {% endif %}
+        </div>
+      </div>
+      <!-- End Main Content Row -->
+    </div>
+  </div>
+</div>
+
+<!-- Modals (Reused) -->
+<div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Join</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to join <strong id="joinEventName"></strong>?</p>
+        <p class="text-muted small">Joining this event will also mark you as interested.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmJoinBtn" class="btn btn-primary">Confirm & Join</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Leave Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to leave <strong id="leaveEventName"></strong>?</p>
+        <p class="text-muted small">This will also remove it from your interests.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="#" id="confirmLeaveBtn" class="btn btn-danger">Leave Event</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function confirmJoin(url, eventName) {
+    document.getElementById('joinEventName').textContent = eventName;
+    document.getElementById('confirmJoinBtn').href = url;
+    var myModal = new bootstrap.Modal(document.getElementById('joinModal'));
+    myModal.show();
+  }
+
+  function confirmLeave(url, eventName) {
+    document.getElementById('leaveEventName').textContent = eventName;
+    document.getElementById('confirmLeaveBtn').href = url;
+    var myModal = new bootstrap.Modal(document.getElementById('leaveModal'));
+    myModal.show();
+  }
+</script>
+
+{% endblock %}

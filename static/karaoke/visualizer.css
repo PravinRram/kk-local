@@ -1,0 +1,258 @@
+/* KampongKonek Karaoke Audio Visualizer Styles */
+
+.visualizer-container {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(40, 40, 40, 0.8) 100%
+  );
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.visualizer-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  filter: blur(3px);
+  z-index: 1;
+}
+
+.visualizer-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+/* Frequency Visualizer */
+.freq-visualizer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.freq-bar {
+  width: 6px;
+  background: linear-gradient(
+    to top,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  border-radius: 3px 3px 0 0;
+  transition: height 0.05s ease;
+  margin: 0 1px;
+}
+
+/* Wave Visualizer */
+.wave-visualizer {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 2;
+  transform-origin: center;
+}
+
+/* Circle Visualizer */
+.circle-visualizer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.circle-visualizer .circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--primary-color);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* Visualizer Overlay Elements */
+.visualizer-info {
+  position: absolute;
+  bottom: 10px;
+  right: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  z-index: 3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.visualizer-title {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  z-index: 3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pitch Detection Indicator */
+.pitch-indicator {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 4px 8px;
+  border-radius: 30px;
+  backdrop-filter: blur(4px);
+}
+
+.pitch-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background-color: #666;
+  transition: background-color 0.2s ease;
+}
+
+.pitch-dot.perfect {
+  background-color: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+}
+
+.pitch-dot.good {
+  background-color: #facc15;
+  box-shadow: 0 0 8px #facc15;
+}
+
+.pitch-dot.off {
+  background-color: #f87171;
+  box-shadow: 0 0 8px #f87171;
+}
+
+.pitch-label {
+  color: white;
+  font-size: 0.75rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Visualizer Controls */
+.visualizer-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 15px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+}
+
+.visualizer-type-toggle {
+  background: none;
+  border: none;
+  color: white;
+  opacity: 0.7;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.visualizer-type-toggle:hover {
+  opacity: 1;
+}
+
+.visualizer-type-toggle.active {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Animation Keyframes */
+@keyframes ripple {
+  0% {
+    width: 0px;
+    height: 0px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation Classes */
+.ripple-animation {
+  animation: ripple 2s infinite ease-out;
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .visualizer-container {
+    height: 100px;
+  }
+
+  .freq-bar {
+    width: 4px;
+    margin: 0 1px;
+  }
+}
+
+@media (max-width: 576px) {
+  .visualizer-container {
+    height: 80px;
+  }
+
+  .freq-bar {
+    width: 3px;
+    margin: 0 0.5px;
+  }
+
+  .visualizer-title {
+    font-size: 0.85rem;
+    max-width: 70%;
+  }
+
+  .visualizer-info {
+    font-size: 0.7rem;
+  }
+}

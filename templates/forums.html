@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Forums / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <span class="material-symbols-outlined">forum</span>Forums
+            </h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createForumModal">
+                <span class="material-symbols-outlined">add</span>Create Forum
+            </button>
+        </div>
+        
+        <!-- Search and Filter Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Discover Forums</h5>
+                <form action="{{ url_for('forum.search_forums') }}" method="GET">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <input type="text" class="form-control" name="q" 
+                                   placeholder="Search forums..." value="{{ request.args.get('q', '') }}">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <select class="form-select" name="filter">
+                                <option value="activity" {% if request.args.get('filter') == 'activity' %}selected{% endif %}>
+                                    Most Active
+                                </option>
+                                <option value="popularity" {% if request.args.get('filter') == 'popularity' %}selected{% endif %}>
+                                    Most Popular
+                                </option>
+                                <option value="newest" {% if request.args.get('filter') == 'newest' %}selected{% endif %}>
+                                    Newest
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <select class="form-select" name="interest">
+                                <option value="">All Interests</option>
+                                {% for interest in interests_list %}
+                                <option value="{{ interest }}" 
+                                        {% if request.args.get('interest') == interest %}selected{% endif %}>
+                                    {{ interest }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined">search</span> Search
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Joined Forums -->
+        <h3 class="mb-3">
+            <span class="material-symbols-outlined">check_circle</span> Your Forums
+        </h3>
+        {% if joined_forums %}
+            <div class="row">
+                {% for forum in joined_forums %}
+                <div class="col-md-6 mb-3">
+                    <div class="forum-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">
+                                <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ forum.name }}
+                                </a>
+                            </h5>
+                            {% if forum.is_private %}
+                            <span class="badge bg-warning">
+                                <span class="material-symbols-outlined">lock</span> Private
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-2">{{ forum.description[:100] }}{% if forum.description|length > 100 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                            </small>
+                            <small class="text-muted">
+                                By {{ forum.creator_username }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                You haven't joined any forums yet. Check out the recommended forums below!
+            </div>
+        {% endif %}
+        
+        <hr class="my-4">
+        
+        <!-- Recommended Forums -->
+        <h3 class="mb-3">
+            <span class="material-symbols-outlined">star</span> Recommended for You
+        </h3>
+        {% if recommended_forums %}
+            <div class="row">
+                {% for forum in recommended_forums %}
+                <div class="col-md-6 mb-3">
+                    <div class="forum-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">
+                                <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ forum.name }}
+                                </a>
+                            </h5>
+                        </div>
+                        <p class="text-muted mb-2">{{ forum.description[:100] }}{% if forum.description|length > 100 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                            </small>
+                            <small class="text-muted">
+                                By {{ forum.creator_username }}
+                            </small>
+                        </div>
+                        <form method="POST" action="{{ url_for('forum.join_forum', forum_id=forum.id) }}">
+                            {{ csrf_token() }}
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <span class="material-symbols-outlined">add</span> Join Forum
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                No recommended forums at the moment. Try updating your interests in your profile!
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Forum Modal -->
+{% include "includes/_forum_modal.html" %}
+
+<script>
+// Wait for modal to be fully rendered
+document.getElementById('createForumModal').addEventListener('shown.bs.modal', function () {
+    // Use FilePond component for forum banner
+    if (!document.querySelector('.filepond-forum-banner').classList.contains('filepond--hopper')) {
+        window.forumBannerPond = FilePondComponents.createForumBanner('.filepond-forum-banner', 'forum_banner');
+    }
+}, { once: true });
+</script>
+{% endblock %}
+{% block extra_js %}
+{% endblock %}

@@ -1,0 +1,196 @@
+<div class="post-card">
+    <div class="d-flex">
+        <img src="{{ avatar_url(post.profile_picture) }}" 
+             class="user-avatar me-3" alt="{{ post.username }}">
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>  
+                    <div>
+                        <a href="{{ url_for('auth.profile_public', username=post.username) }}" class="text-decoration-none">
+                            <strong>{{ post.username }}</strong>
+                        </a>
+                        <span class="age-badge ms-2">{{ post.age }} years</span>
+                        {% if show_forum_name|default(true) and post.forum_name %}
+                        <span class="ms-2 text-muted d-inline-flex align-items-center gap-2">
+                            in 
+                            <a href="{{ url_for('forum.forum_detail', forum_id=post.forum_id) }}" class="text-decoration-none">
+                                {% if post.forum_banner %}
+                                <img src="{{ post.forum_banner }}" 
+                                    class="forum-banner-small" 
+                                    alt="{{ post.forum_name }}">
+                                {% else %}
+                                <span class="forum-banner-small forum-banner-default"></span>
+                                {% endif %}
+                                    {{ post.forum_name }}
+                            </a>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ post.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                </div>
+
+
+                <!-- Moderator/Delete Menu -->
+                {% if (is_moderator|default(false) or session.get('is_admin')) and post.user_id != session.get('user_id') %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                            type="button" data-bs-toggle="dropdown">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <button class="dropdown-item text-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ post.id }}">
+                                <span class="material-symbols-outlined">delete</span> Delete Post
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Delete Button (only for post owner) -->
+                {% if session.get('user_id') == post.user_id %}
+                <div class="dropdown">
+                    <button class="btn btn-sm" type="button" data-bs-toggle="dropdown">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" data-bs-toggle="modal" 
+                                    data-bs-target="#deleteOwnModal{{ post.id }}">
+                                <span class="material-symbols-outlined">delete</span> Delete
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Post Content -->
+            <div class="my-3">
+                    <p class="mb-2">{{ post.content }}</p>
+                    
+                    {% if post.image_url %}
+                    <div class="post-image-container" data-bs-toggle="modal" data-bs-target="#imageModal{{ post.id }}">
+                        <img src="{{ post.image_url }}" alt="Post image">
+                    </div>
+
+                    <!-- Image Modal -->
+                    <div class="modal fade" id="imageModal{{ post.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered modal-xl">
+                            <div class="modal-content bg-transparent border-0">
+                                <div class="modal-body p-0 position-relative">
+                                    <button type="button" class="btn-close btn-close-white image-modal-close position-absolute top-0 m-3" 
+                                            data-bs-dismiss="modal"></button>
+                                    <img src="{{ post.image_url }}" class="img-fluid w-100" alt="Post image">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Hashtags -->
+                    {% if post.hashtags %}
+                    <div class="mt-2">
+                        {% for tag in post.hashtags %}
+                        <a href="{{ url_for('forum.hashtag_posts', hashtag=tag[1:]) }}" class="hashtag-link">{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Repost/Quote Repost -->
+                    {% if post.is_repost and post.original_post_id %}
+                    <div class="border border-2 rounded p-3 mt-2" style="border-color: var(--border-color) !important;">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="material-symbols-outlined text-secondary me-1">repeat</span>
+                            <small class="text-muted">Reposted from:</small>
+                        </div>
+                        
+                        {% if post.original_post %}
+                        <!-- Original Post Preview -->
+                        <div class="d-flex mb-2">
+                            <img src="{{ post.original_post.profile_picture }}" 
+                                class="rounded-circle me-2" 
+                                style="width: 40px; height: 40px; object-fit: cover;" 
+                                alt="{{ post.original_post.username }}">
+                            <div class="flex-grow-1">
+                                <div>
+                                    <a href="{{ url_for('profile', user_id=post.original_post.user_id) }}" 
+                                    class="text-decoration-none">
+                                        <strong>{{ post.original_post.username }}</strong>
+                                    </a>
+                                    <span class="age-badge ms-2">{{ post.original_post.age }} years</span>
+                                </div>
+                                <small class="text-muted">{{ post.original_post.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                            </div>
+                        </div>
+                        
+                        <p class="mb-2">{{ post.original_post.content }}</p>
+                        
+                        {% if post.original_post.image_url %}
+                        <div class="post-image-container" style="height: 300px;" 
+                            data-bs-toggle="modal" data-bs-target="#imageModalOriginal{{ post.id }}">
+                            <img src="{{ post.original_post.image_url }}" alt="Original post image">
+                        </div>
+
+                        <!-- Original Post Image Modal -->
+                        <div class="modal fade" id="imageModalOriginal{{ post.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-xl">
+                                <div class="modal-content bg-transparent border-0">
+                                    <div class="modal-body p-0 position-relative">
+                                        <button type="button" class="btn-close btn-close-white image-modal-close position-absolute top-0 m-3" 
+                                                data-bs-dismiss="modal" style="z-index: 1051;"></button>
+                                        <img src="{{ post.original_post.image_url }}" class="img-fluid w-100" alt="Original post image">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('post_detail', post_id=post.original_post_id) }}" 
+                        class="btn btn-sm btn-outline-secondary">
+                            <span class="material-symbols-outlined">visibility</span> View Original Post
+                        </a>
+                        {% else %}
+                        <!-- Original post was deleted -->
+                        <div class="alert alert-secondary mb-0">
+                            <span class="material-symbols-outlined">info</span>
+                            Original post is no longer available
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Actions -->
+    <div class="post-actions d-flex gap-3 border-top pt-2">
+        <!-- Like Button -->
+        <button class="btn btn-sm like-btn" data-post-id="{{ post.id }}" onclick="likePost({{ post.id }})">
+            <span class="material-symbols-outlined {% if post.is_liked %}filled{% endif %}">favorite</span>
+            <span>{{ post.likes_count }}</span>
+        </button>
+        
+        <!-- Comment Button -->
+        <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" class="btn btn-sm">
+            <span class="material-symbols-outlined">chat</span> {{ post.comments_count }}
+        </a>
+        
+        <!-- Repost Button -->
+        <button class="btn btn-sm" data-bs-toggle="modal" 
+                data-bs-target="#repostModal{{ post.id }}">
+            <span class="material-symbols-outlined">repeat</span> {{ post.reposts_count }}
+        </button>
+        
+        <!-- Share Button -->
+        <button class="btn btn-sm" onclick="copyShareLink()">
+            <span class="material-symbols-outlined">share</span>
+        </button>        
+    </div>
+</div>
+
+{% include "includes/_repost_modal.html" %}
+
+{% include "includes/_delete_modal.html" %}

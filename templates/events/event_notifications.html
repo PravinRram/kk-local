@@ -1,0 +1,1050 @@
+{% extends "events/base.html" %} {% block content %}
+<style>
+    .option-card {
+        border: 2px solid #ddd;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        height: 100%;
+        background: #fff;
+    }
+    .option-card:hover {
+        border-color: #ffc107;
+        background-color: #fff9e6;
+    }
+    .option-card.selected {
+        border-color: #ffc107;
+        background-color: #fff3cd;
+        position: relative;
+    }
+</style>
+<div class="kk-content-wrapper">
+    {# --- HOST DASHBOARD SECTION --- #} {% if current_user.user_role == 'admin'
+    %} {# Quick Stats Bar #}
+    <div class="row mb-4 g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+                <div
+                    class="card-body d-flex align-items-center justify-content-between"
+                >
+                    <div>
+                        <h6 class="mb-0 text-white-50">Total Participants</h6>
+                        <h3 class="fw-bold mb-0">
+                            {{ host_stats.total_participants }}
+                        </h3>
+                    </div>
+                    <i class="bi bi-people-fill fs-1 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
+                <div
+                    class="card-body d-flex align-items-center justify-content-between"
+                >
+                    <div>
+                        <h6 class="mb-0 text-white-50">
+                            Upcoming Events (This Week)
+                        </h6>
+                        <h3 class="fw-bold mb-0">
+                            {{ host_stats.upcoming_this_week }}
+                        </h3>
+                    </div>
+                    <i class="bi bi-calendar-check-fill fs-1 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div
+                        class="d-flex align-items-center justify-content-between mb-2"
+                    >
+                        <h6 class="fw-bold mb-0">Signups over time</h6>
+                    </div>
+                    <div class="kk-chart-container">
+                        <canvas id="signupsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div
+                        class="d-flex align-items-center justify-content-between mb-2"
+                    >
+                        <h6 class="fw-bold mb-0">Events by type/visibility</h6>
+                    </div>
+                    <div class="kk-chart-container-small">
+                        <canvas id="eventsMixChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 class="fw-bold mb-0">Notifications</h4>
+    </div>
+
+    {% if pending_requests %}
+    <div
+        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2"
+    >
+        <h5 class="fw-bold mb-0">Need your action</h5>
+        <div class="d-flex gap-2">
+            <a
+                href="{{ url_for('events.events_request_approve_all') }}"
+                class="btn btn-sm btn-warning fw-semibold text-dark flex-grow-1 flex-md-grow-0"
+            >
+                Approve All
+            </a>
+            <a
+                href="{{ url_for('events.events_request_reject_all') }}"
+                class="btn btn-sm btn-outline-secondary fw-semibold flex-grow-1 flex-md-grow-0"
+            >
+                Reject All
+            </a>
+        </div>
+    </div>
+    <div class="d-flex flex-column gap-3 mb-4">
+        {% for req in pending_requests %}
+        <div class="card border-0 shadow-sm bg-light">
+            <div
+                class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"
+            >
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">
+                        New join request for {{ req.event_name }}
+                    </h6>
+                    <div class="text-muted small">
+                        User <strong>{{ req.user_name }}</strong> wants to join
+                        your event.
+                    </div>
+                </div>
+                <div class="d-flex gap-2" style="min-width: 200px">
+                    <a
+                        href="{{ url_for('events.events_request_approve', participant_id=req.participant_id) }}"
+                        class="btn btn-warning fw-semibold text-dark flex-grow-1"
+                    >
+                        Approve
+                    </a>
+                    <a
+                        href="{{ url_for('events.events_request_reject', participant_id=req.participant_id) }}"
+                        class="btn btn-outline-secondary fw-semibold flex-grow-1"
+                    >
+                        Reject
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} {% endif %} {# --- END HOST DASHBOARD SECTION --- #}
+
+    <h5 class="fw-bold mb-3">Upcoming Events</h5>
+
+    {% if events %}
+    <div class="d-flex flex-column gap-3">
+        {% for event in events %}
+        <div class="card border-0 shadow-sm">
+            <div
+                class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3"
+            >
+                {# Left Side: Event Details #}
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">
+                        {{ event.display_date }} · {{ event.title }} · {{
+                        event.display_start_time }} – {{ event.display_end_time
+                        }}
+                    </h6>
+                    <div class="text-muted small">
+                        {{ event.type }}, {{ event.visibility|capitalize }} {%
+                        if event.location %} · {{ event.location }} {% endif %}
+                    </div>
+                </div>
+
+                {# Right Side: Action Buttons #}
+                <div class="d-flex gap-2" style="min-width: 320px">
+                    {% if event.role == 'host' %} {# Host View: Review Settings
+                    | Open Event Room #}
+                    <button
+                        type="button"
+                        class="btn btn-warning fw-semibold text-dark flex-grow-1"
+                        data-id="{{ event.event_id }}"
+                        data-title="{{ event.title }}"
+                        data-location="{{ event.location }}"
+                        data-start-date="{{ event.start_date }}"
+                        data-end-date="{{ event.end_date }}"
+                        data-start-time="{{ event.start_time }}"
+                        data-end-time="{{ event.end_time }}"
+                        data-visibility="{{ event.visibility }}"
+                        data-type="{{ event.event_type }}"
+                        data-description="{{ event.description or '' }}"
+                        onclick="openHostModal(this)"
+                    >
+                        Review Settings
+                    </button>
+                    <a
+                        href="{{ url_for('events.events_detail', event_code=event.event_code) }}"
+                        class="btn btn-warning fw-semibold text-dark flex-grow-1"
+                    >
+                        Open Event Room
+                    </a>
+                    {% else %} {# Participant View: View Details | Open Event
+                    Room #}
+                    <button
+                        type="button"
+                        class="btn btn-warning fw-semibold text-dark flex-grow-1"
+                        data-id="{{ event.event_id }}"
+                        data-title="{{ event.title }}"
+                        data-location="{{ event.location }}"
+                        data-display-date="{{ event.display_date }}"
+                        data-start-time="{{ event.display_start_time }}"
+                        data-end-time="{{ event.display_end_time }}"
+                        data-visibility="{{ event.visibility }}"
+                        data-type="{{ event.event_type }}"
+                        data-description="{{ event.description or '' }}"
+                        onclick="openParticipantModal(this)"
+                    >
+                        View Details
+                    </button>
+                    <a
+                        href="{{ url_for('events.events_detail', event_code=event.event_code) }}"
+                        class="btn btn-warning fw-semibold text-dark flex-grow-1"
+                    >
+                        Open Event Room
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted bg-white rounded shadow-sm">
+        <i class="bi bi-calendar-x fs-1 mb-3 d-block"></i>
+        <p>No upcoming events found.</p>
+    </div>
+    {% endif %} {% if current_user.user_role == 'admin' %} {% if
+    smart_suggestions %}
+    <h5 class="fw-bold my-4">Smart Suggestions</h5>
+    <div class="row g-3">
+        {% for sugg in smart_suggestions %}
+        <div class="col-md-6">
+            <div
+                class="card border-0 shadow-sm border-start border-4 border-warning h-100"
+            >
+                <div class="card-body">
+                    <div
+                        class="d-flex justify-content-between align-items-start"
+                    >
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ sugg.event_name }}</h6>
+                            <p class="text-muted small mb-2">
+                                <i
+                                    class="bi bi-exclamation-circle text-warning me-1"
+                                ></i>
+                                Low signup ({{ sugg.signups }}/{{ sugg.capacity
+                                }})
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-share-url="{{ url_for('events.events_detail', event_code=sugg.event_code) }}"
+                            onclick="openShareModal(this.getAttribute('data-share-url'))"
+                        >
+                            <i class="bi bi-share me-1"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h5 class="fw-bold my-4">Recent Activity</h5>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="list-group list-group-flush">
+            {% if recent_activity %} {% for act in recent_activity %}
+            <div class="list-group-item d-flex align-items-center gap-3 py-3">
+                <div
+                    class="bg-light rounded-circle p-2 d-flex align-items-center justify-content-center"
+                    style="width: 40px; height: 40px"
+                >
+                    <i class="bi bi-person-fill text-muted"></i>
+                </div>
+                <div>
+                    <p class="mb-0 small">
+                        <span class="fw-bold">{{ act.user_name }}</span>
+                        joined
+                        <span class="fw-bold text-primary"
+                            >{{ act.event_name }}</span
+                        >
+                    </p>
+                    <small class="text-muted">{{ act.joined_at }}</small>
+                </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="list-group-item text-center py-4 text-muted">
+                No recent activity.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <h5 class="fw-bold my-4">My Calendar</h5>
+    <div class="card border-0 shadow-sm p-3">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<script id="signups-data" type="application/json">
+    {{ signups_over_time | tojson }}
+</script>
+<script id="events-mix-data" type="application/json">
+    {{ events_mix | tojson }}
+</script>
+<script id="calendar-data" type="application/json">
+    {{ calendar_events | tojson }}
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var calendarEvents = JSON.parse(
+            document.getElementById("calendar-data").textContent,
+        );
+
+        var calendarEl = document.getElementById("calendar");
+        if (calendarEl && window.FullCalendar) {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: "dayGridMonth",
+                headerToolbar: {
+                    left: "prev,next today",
+                    center: "title",
+                    right: "dayGridMonth,timeGridWeek,timeGridDay",
+                },
+                events: calendarEvents,
+                eventClick: function (info) {
+                    if (info.event.url) {
+                        window.location.href = info.event.url;
+                        info.jsEvent.preventDefault();
+                    }
+                },
+            });
+            calendar.render();
+        }
+
+        var signupsDataEl = document.getElementById("signups-data");
+        var eventsMixDataEl = document.getElementById("events-mix-data");
+
+        if (window.Chart && signupsDataEl && eventsMixDataEl) {
+            var signupsData = [];
+            try {
+                signupsData = JSON.parse(signupsDataEl.textContent || "[]");
+            } catch (e) {
+                signupsData = [];
+            }
+
+            var eventsMixData = [];
+            try {
+                eventsMixData = JSON.parse(eventsMixDataEl.textContent || "[]");
+            } catch (e) {
+                eventsMixData = [];
+            }
+
+            var signupsCtx = document.getElementById("signupsChart");
+            if (signupsCtx && signupsData.length > 0) {
+                var labels = signupsData.map(function (item) {
+                    return item.date;
+                });
+                var counts = signupsData.map(function (item) {
+                    return item.count;
+                });
+                new Chart(signupsCtx.getContext("2d"), {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "New signups",
+                                data: counts,
+                                borderColor: "#F06B42",
+                                backgroundColor: "rgba(240, 107, 66, 0.1)",
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 3,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    maxTicksLimit: 6,
+                                },
+                            },
+                            y: {
+                                beginAtZero: true,
+                                precision: 0,
+                            },
+                        },
+                    },
+                });
+            }
+
+            var eventsCtx = document.getElementById("eventsMixChart");
+            if (eventsCtx && eventsMixData.length > 0) {
+                var mixLabels = eventsMixData.map(function (item) {
+                    return item.label;
+                });
+                var mixCounts = eventsMixData.map(function (item) {
+                    return item.count;
+                });
+                new Chart(eventsCtx.getContext("2d"), {
+                    type: "doughnut",
+                    data: {
+                        labels: mixLabels,
+                        datasets: [
+                            {
+                                data: mixCounts,
+                                backgroundColor: [
+                                    "#F06B42",
+                                    "#FBC851",
+                                    "#4CAF50",
+                                    "#0d6efd",
+                                ],
+                                borderWidth: 1,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                            },
+                        },
+                        cutout: "60%",
+                    },
+                });
+            }
+        }
+    });
+</script>
+
+{# --- IMAGE SELECTION MODAL --- #}
+<div
+    class="modal fade"
+    id="imageSelectionModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Event Image</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-6">
+                        <div class="option-card" onclick="triggerUpload()">
+                            <div class="fs-1 mb-2">🖼️</div>
+                            <div class="fw-bold">
+                                Upload Image From your device
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="option-card" onclick="openAIModal()">
+                            <div class="fs-1 mb-2">✨</div>
+                            <div class="fw-bold">Smart Match Image</div>
+                            <div class="small text-muted">
+                                Auto-finds image based on description
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- SMART MATCH MODAL --- #}
+<div class="modal fade" id="aiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">✨ Smart Image Match</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body text-center">
+                <div
+                    id="imagePreviewContainer"
+                    class="p-3 mb-3 border rounded bg-light"
+                    style="
+                        min-height: 250px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-direction: column;
+                    "
+                >
+                    <div
+                        id="loadingSpinner"
+                        class="spinner-border text-primary d-none"
+                        role="status"
+                    >
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img
+                        id="fetchedImage"
+                        src=""
+                        class="img-fluid rounded d-none"
+                        style="max-height: 300px; object-fit: cover"
+                    />
+                    <div id="emptyState" class="text-muted">
+                        <p class="mb-2">
+                            Finding image based on event description...
+                        </p>
+                    </div>
+                    <div id="errorState" class="text-danger small d-none"></div>
+                </div>
+
+                <div
+                    id="queryDisplay"
+                    class="small text-muted fst-italic mb-3"
+                ></div>
+
+                <div
+                    id="resultControls"
+                    class="d-none d-flex gap-2 justify-content-center"
+                >
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        onclick="nextImage()"
+                    >
+                        🔄 Try Another
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-success"
+                        onclick="confirmAIImage()"
+                    >
+                        ✅ Use This Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- HOST MODAL (Editable) --- #}
+<div class="modal fade" id="hostSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="hostEditForm" method="post" enctype="multipart/form-data">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Review Settings</h5>
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                    ></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Event Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input
+                                type="hidden"
+                                name="image_source"
+                                id="editImageSource"
+                            />
+                            <input
+                                type="hidden"
+                                name="ai_image_url"
+                                id="editAiImageUrl"
+                            />
+                            <input type="hidden" id="editEventDescription" />
+                            <!-- For AI fetching -->
+                            <input
+                                type="file"
+                                name="event_image"
+                                id="editFileInput"
+                                class="d-none"
+                                accept="image/*"
+                                onchange="handleFileSelect(this)"
+                            />
+                            <button
+                                type="button"
+                                class="btn btn-outline-primary"
+                                onclick="openImageSelectionModal()"
+                            >
+                                Update Image
+                            </button>
+                            <span
+                                id="editImageStatus"
+                                class="text-muted small fst-italic"
+                            ></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Event Name</label>
+                        <input
+                            type="text"
+                            name="event_name"
+                            id="hostEventName"
+                            class="form-control"
+                            required
+                        />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Start Date</label>
+                            <input
+                                type="date"
+                                name="start_date"
+                                id="hostStartDate"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">End Date</label>
+                            <input
+                                type="date"
+                                name="end_date"
+                                id="hostEndDate"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Start Time</label>
+                            <input
+                                type="time"
+                                name="start_time"
+                                id="hostStartTime"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">End Time</label>
+                            <input
+                                type="time"
+                                name="end_time"
+                                id="hostEndTime"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Location</label>
+                        <input
+                            type="text"
+                            name="location"
+                            id="hostLocation"
+                            class="form-control"
+                            required
+                        />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Visibility</label>
+                            <select
+                                name="visibility"
+                                id="hostVisibility"
+                                class="form-select"
+                            >
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type</label>
+                            <select
+                                name="event_type"
+                                id="hostEventType"
+                                class="form-select"
+                            >
+                                <option value="physical">Physical</option>
+                                <option value="online">Online</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {# Hidden fields for optional features preservation if
+                    needed, but for now basic edit #}
+                    <input type="hidden" name="enable_group_chat" value="1" />
+                    <input type="hidden" name="enable_minigames" value="1" />
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn btn-warning text-dark fw-bold"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# --- PARTICIPANT MODAL (Read-Only + Leave) --- #}
+<div
+    class="modal fade"
+    id="participantDetailsModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Event Details</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <h4 class="fw-bold mb-3" id="partEventName"></h4>
+
+                <div class="mb-3">
+                    <span
+                        class="badge bg-warning text-dark me-2"
+                        id="partVisibility"
+                    ></span>
+                    <span class="badge bg-secondary" id="partType"></span>
+                </div>
+
+                <p class="mb-1">
+                    <i class="bi bi-calendar3 me-2 text-muted"></i>
+                    <span id="partDate"></span>
+                </p>
+                <p class="mb-3">
+                    <i class="bi bi-clock me-2 text-muted"></i>
+                    <span id="partTime"></span>
+                </p>
+
+                <p class="mb-3">
+                    <i class="bi bi-geo-alt-fill me-2 text-muted"></i>
+                    <span id="partLocation"></span>
+                </p>
+
+                <hr />
+                <h6 class="fw-bold">Description</h6>
+                <p class="text-muted" id="partDescription"></p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-between">
+                <button
+                    type="button"
+                    class="btn btn-outline-danger"
+                    id="partLeaveBtn"
+                >
+                    Leave Event
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- LEAVE CONFIRMATION MODAL (Standardized) --- #}
+<div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Leave Event</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Are you sure you want to leave
+                    <strong id="leaveEventName"></strong>?
+                </p>
+                <p class="text-muted small">
+                    This will also remove it from your interests.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+                <a href="#" id="confirmLeaveBtn" class="btn btn-danger"
+                    >Leave Event</a
+                >
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentOffset = 0;
+    let switchingToAI = false;
+
+    // --- Event Listeners for Modal Flow ---
+    document.addEventListener("DOMContentLoaded", function () {
+        var imageSelectionModalEl = document.getElementById(
+            "imageSelectionModal",
+        );
+        var aiModalEl = document.getElementById("aiModal");
+        var hostSettingsModalEl = document.getElementById("hostSettingsModal");
+
+        // When Image Selection closes, reopen Host Settings unless we are switching to AI
+        imageSelectionModalEl.addEventListener("hidden.bs.modal", function () {
+            if (switchingToAI) {
+                switchingToAI = false; // Reset for next time
+            } else {
+                // Reopen host settings
+                var hostModal =
+                    bootstrap.Modal.getOrCreateInstance(hostSettingsModalEl);
+                hostModal.show();
+            }
+        });
+
+        // When AI Modal closes, ALWAYS reopen Host Settings (whether confirm or cancel)
+        aiModalEl.addEventListener("hidden.bs.modal", function () {
+            var hostModal =
+                bootstrap.Modal.getOrCreateInstance(hostSettingsModalEl);
+            hostModal.show();
+        });
+    });
+
+    function openHostModal(btn) {
+        const ds = btn.dataset;
+        document.getElementById("hostEditForm").action =
+            "/events/edit/" + ds.id;
+        document.getElementById("hostEventName").value = ds.title;
+        document.getElementById("hostLocation").value = ds.location;
+        document.getElementById("hostStartDate").value = ds.startDate;
+        document.getElementById("hostEndDate").value = ds.endDate;
+        document.getElementById("hostStartTime").value = ds.startTime;
+        document.getElementById("hostEndTime").value = ds.endTime;
+        document.getElementById("hostVisibility").value = ds.visibility;
+        document.getElementById("hostEventType").value = ds.type;
+
+        // Set description for AI
+        document.getElementById("editEventDescription").value =
+            ds.description || ds.title || "";
+
+        // Reset image status
+        document.getElementById("editImageStatus").textContent = "";
+        document.getElementById("editImageSource").value = "";
+
+        new bootstrap.Modal(
+            document.getElementById("hostSettingsModal"),
+        ).show();
+    }
+
+    function openImageSelectionModal() {
+        // Hide host settings first
+        var hostModal = bootstrap.Modal.getInstance(
+            document.getElementById("hostSettingsModal"),
+        );
+        if (hostModal) hostModal.hide();
+
+        new bootstrap.Modal(
+            document.getElementById("imageSelectionModal"),
+        ).show();
+    }
+
+    function triggerUpload() {
+        document.getElementById("editFileInput").click();
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById("editImageStatus").textContent =
+                "Selected: " + file.name;
+            document.getElementById("editImageSource").value = "upload";
+
+            // Close selection modal
+            bootstrap.Modal.getInstance(
+                document.getElementById("imageSelectionModal"),
+            ).hide();
+        }
+    }
+
+    function openAIModal() {
+        switchingToAI = true; // Set flag to prevent reopening host settings immediately
+
+        // Close selection modal
+        bootstrap.Modal.getInstance(
+            document.getElementById("imageSelectionModal"),
+        ).hide();
+
+        const aiModal = new bootstrap.Modal(document.getElementById("aiModal"));
+        aiModal.show();
+
+        // Fetch initial image
+        currentOffset = 0;
+        fetchImage(0);
+    }
+
+    function nextImage() {
+        currentOffset++;
+        fetchImage(currentOffset);
+    }
+
+    function fetchImage(offset) {
+        const spinner = document.getElementById("loadingSpinner");
+        const img = document.getElementById("fetchedImage");
+        const empty = document.getElementById("emptyState");
+        const error = document.getElementById("errorState");
+        const queryDisplay = document.getElementById("queryDisplay");
+        const controls = document.getElementById("resultControls");
+
+        const description = document.getElementById(
+            "editEventDescription",
+        ).value;
+
+        // Reset UI
+        spinner.classList.remove("d-none");
+        img.classList.add("d-none");
+        empty.classList.add("d-none");
+        error.classList.add("d-none");
+        controls.classList.add("d-none");
+
+        const fetchUrl =
+            "{{ url_for('events.events_create_image_fetch') }}?description=" +
+            encodeURIComponent(description) +
+            "&offset=" +
+            offset;
+
+        fetch(fetchUrl)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) throw new Error(data.error);
+
+                img.src = data.image_url;
+                img.classList.remove("d-none");
+                controls.classList.remove("d-none");
+                queryDisplay.textContent = `Found for: "${data.query}"`;
+            })
+            .catch((err) => {
+                console.error(err);
+                error.textContent = err.message;
+                error.classList.remove("d-none");
+            })
+            .finally(() => {
+                spinner.classList.add("d-none");
+            });
+    }
+
+    function confirmAIImage() {
+        const img = document.getElementById("fetchedImage");
+        if (img.src && !img.classList.contains("d-none")) {
+            document.getElementById("editAiImageUrl").value = img.src;
+            document.getElementById("editImageSource").value = "ai";
+            document.getElementById("editImageStatus").textContent =
+                "AI Image Selected";
+
+            bootstrap.Modal.getInstance(
+                document.getElementById("aiModal"),
+            ).hide();
+        }
+    }
+
+    function openParticipantModal(btn) {
+        const ds = btn.dataset;
+        document.getElementById("partEventName").textContent = ds.title;
+        document.getElementById("partLocation").textContent = ds.location;
+        document.getElementById("partDate").textContent = ds.displayDate;
+        document.getElementById("partTime").textContent =
+            ds.startTime + " – " + ds.endTime;
+        document.getElementById("partVisibility").textContent =
+            ds.visibility.charAt(0).toUpperCase() + ds.visibility.slice(1);
+        document.getElementById("partType").textContent =
+            ds.type.charAt(0).toUpperCase() + ds.type.slice(1);
+        document.getElementById("partDescription").textContent = ds.description;
+
+        // Set leave button action to open the leave modal
+        var leaveBtn = document.getElementById("partLeaveBtn");
+        leaveBtn.onclick = function () {
+            // Close details modal first
+            var detailsModalEl = document.getElementById(
+                "participantDetailsModal",
+            );
+            var detailsModal = bootstrap.Modal.getInstance(detailsModalEl);
+            detailsModal.hide();
+
+            // Open leave modal
+            confirmLeave("/events/leave/" + ds.id, ds.title);
+        };
+
+        new bootstrap.Modal(
+            document.getElementById("participantDetailsModal"),
+        ).show();
+    }
+
+    function confirmLeave(url, eventName) {
+        document.getElementById("leaveEventName").textContent = eventName;
+        document.getElementById("confirmLeaveBtn").href = url;
+        var myModal = new bootstrap.Modal(
+            document.getElementById("leaveModal"),
+        );
+        myModal.show();
+    }
+</script>
+{% endblock %}

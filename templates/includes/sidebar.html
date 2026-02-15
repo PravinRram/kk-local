@@ -1,0 +1,38 @@
+<aside class="kk-sidebar bg-white p-3 h-100">
+  <h5 class="fw-bold mb-3">Events</h5>
+  <form method="get" action="{{ url_for('events.events') }}" class="mb-3">
+    <div class="input-group">
+      <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+      <input type="text" class="form-control" name="q" placeholder="Search Event" value="{{ q|default('') }}">
+      {% if date_filter %}<input type="hidden" name="date" value="{{ date_filter }}">{% endif %}
+      {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
+    </div>
+  </form>
+
+  <nav class="nav flex-column kk-left-nav mb-3">
+    <a class="nav-link {{ 'active' if request.endpoint == 'events.events' else '' }}" href="{{ url_for('events.events') }}"><i class="bi bi-calendar-event me-2"></i>Events</a>
+    <a class="nav-link {{ 'active' if request.endpoint == 'events.events_your_events' else '' }}" href="{{ url_for('events.events_your_events') }}"><i class="bi bi-person-check me-2"></i>Your Events</a>
+    <a class="nav-link {{ 'active' if request.endpoint == 'events.events_public_events' else '' }}" href="{{ url_for('events.events_public_events') }}"><i class="bi bi-globe2 me-2"></i>Public Events</a>
+    <a class="nav-link {{ 'active' if request.endpoint == 'events.events_private_events' else '' }}" href="{{ url_for('events.events_private_events') }}"><i class="bi bi-lock-fill me-2"></i>Private Events</a>
+    <a class="nav-link {{ 'active' if request.endpoint == 'events.event_notifications' else '' }}" href="{{ url_for('events.event_notifications') }}"><i class="bi bi-bell-fill me-2"></i>Notification</a>
+  </nav>
+
+  {% if current_user.user_role == 'admin' %}
+  <a href="{{ url_for('events.create_event_method') }}" class="btn kk-create-btn w-100 mb-4 fw-semibold"><span class="bi bi-plus-lg me-2"></span>Create New Event</a>
+  {% else %}
+  <form action="{{ url_for('events.events_join_code') }}" method="POST" class="mb-4">
+    <div class="input-group">
+      <input type="text" name="event_code" class="form-control" placeholder="Code KK-..." aria-label="Event Code" required>
+      <button class="btn btn-outline-secondary" type="submit">Join</button>
+    </div>
+  </form>
+  {% endif %}
+
+  <div class="kk-main-nav d-grid gap-2">
+    <a class="btn btn-outline-secondary text-start" href="#"><i class="bi bi-house-door me-2"></i>Home</a>
+    <a class="btn btn-outline-secondary text-start" href="#"><i class="bi bi-compass me-2"></i>Explore</a>
+    <a class="btn btn-outline-secondary text-start" href="#"><i class="bi bi-chat-left-text me-2"></i>Forums</a>
+    <a class="btn btn-outline-secondary text-start" href="{{ url_for('karaoke') }}"><i class="bi bi-controller me-2"></i>Games</a>
+    <a class="btn btn-outline-secondary text-start mb-3" href="#"><i class="bi bi-envelope me-2"></i>Messages</a>
+  </div>
+</aside>

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="card">
+    <h2>Find People</h2>
+    <form method="get" class="form search-form">
+      <input
+        type="text"
+        name="q"
+        placeholder="Search by username or display name"
+        value="{{ query }}"
+      />
+      <button class="button primary" type="submit">Search</button>
+    </form>
+
+    {% if query %}
+      <h3 class="spacer-top">Results for "{{ query }}"</h3>
+      <div class="search-results">
+        {% set shown = namespace(count=0) %}
+        {% for user in results %}
+          {% if user.id != current_user.id %}
+            <div class="card search-card">
+              <div class="search-user">
+                <div class="search-user-main">
+                  <img
+                    class="search-avatar"
+                    src="{{ avatar_url(user.profile_picture_url) }}"
+                    alt="Profile picture"
+                  />
+                  <div>
+                    <strong>{{ user.display_name or user.username }}</strong>
+                    <p class="muted">@{{ user.username }}</p>
+                  </div>
+                </div>
+                <div class="search-actions">
+                  <a class="button primary" href="{{ url_for('auth.profile_public', username=user.username) }}">View</a>
+                  {% if follow_map.get(user.id) %}
+                    <form method="post" action="{{ url_for('auth.unfollow_user', username=user.username) }}">
+                      {{ csrf_token() }}
+                      <input type="hidden" name="next" value="{{ request.full_path }}" />
+                      <button class="button primary" type="submit">Unfollow</button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{{ url_for('auth.follow_user', username=user.username) }}">
+                      {{ csrf_token() }}
+                      <input type="hidden" name="next" value="{{ request.full_path }}" />
+                      <button class="button primary" type="submit">Follow</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% set shown.count = shown.count + 1 %}
+          {% endif %}
+        {% endfor %}
+        {% if shown.count == 0 %}
+          <p class="muted">No users found.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

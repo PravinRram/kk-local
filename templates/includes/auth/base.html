@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title or "KampongKonek" }}</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth/css/style.css') }}" />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+
+    <main class="page-container">
+      {% set show_nav = (not hide_nav) and current_user %}
+      <div class="{% if show_nav %}app-layout{% else %}auth-layout{% endif %}">
+        {% if show_nav %}
+          <div class="nav-backdrop" data-nav-backdrop></div>
+          <aside class="side-nav">
+            <div class="side-nav-header">
+              <span class="muted small">Menu</span>
+              <button
+                class="icon-button nav-close"
+                type="button"
+                data-nav-close
+                aria-label="Close navigation menu"
+              >
+                <i data-feather="x"></i>
+              </button>
+            </div>
+            <a class="side-user" href="{{ url_for('profile') }}">
+              <div class="side-avatar">
+                <img
+                  class="side-avatar-img"
+                  src="{{ avatar_url(current_user.profile_picture_url) }}"
+                  alt="Profile picture"
+                />
+                <span>{{ current_user.display_name or current_user.username }}</span>
+              </div>
+            </a>
+            <nav>
+              <a class="{% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">
+                <i data-feather="home"></i> Home
+              </a>
+              <a class="{% if request.endpoint == 'search_users' %}active{% endif %}" href="{{ url_for('search_users') }}">
+                <i data-feather="compass"></i> Explore
+              </a>
+              <a class="{% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">
+                <i data-feather="bell"></i> Notifications
+                {% if notification_count %}
+                  <span class="nav-badge">{{ notification_count }}</span>
+                {% endif %}
+              </a>
+              <a class="{% if request.endpoint == 'forums' %}active{% endif %}" href="{{ url_for('forums') }}">
+                <i data-feather="message-circle"></i> Forums
+              </a>
+              <a class="{% if request.endpoint == 'events' %}active{% endif %}" href="{{ url_for('events') }}">
+                <i data-feather="calendar"></i> Events
+              </a>
+              <a class="{% if request.endpoint and request.endpoint.startswith('karaoke') %}active{% endif %}" href="{{ url_for('karaoke') }}">
+                <i data-feather="grid"></i> Games
+              </a>
+              <a class="{% if request.endpoint == 'messages_page' %}active{% endif %}" href="{{ url_for('messages_page') }}">
+                <i data-feather="mail"></i> Messages
+              </a>
+              <a class="{% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">
+                <i data-feather="settings"></i> Settings
+              </a>
+            </nav>
+            <button class="button gradient full">New Post</button>
+            {% block side_extra %}{% endblock %}
+          </aside>
+        {% endif %}
+        <div class="{% if show_nav %}app-main{% else %}auth-main{% endif %}">
+          {% if show_nav %}
+            <div class="mobile-nav-bar">
+              <button
+                class="icon-button nav-toggle"
+                type="button"
+                data-nav-toggle
+                aria-label="Open navigation menu"
+                aria-expanded="false"
+              >
+                <i data-feather="menu"></i>
+              </button>
+              <span class="mobile-nav-title">{{ title or "KampongKoneck" }}</span>
+            </div>
+          {% endif %}
+          {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+              <div class="flash-list">
+                {% for category, message in messages %}
+                  <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </main>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="{{ url_for('static', filename='auth/js/base.js') }}"></script>
+  </body>
+</html>

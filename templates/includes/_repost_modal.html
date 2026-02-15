@@ -1,0 +1,30 @@
+<!-- Repost Modal -->
+<div class="modal fade" id="repostModal{{ post.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Repost</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('forum.repost', post_id=post.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Add a comment (optional)</label>
+                        <textarea class="form-control" name="quote_content" rows="3" 
+                                  maxlength="280" placeholder="Add your thoughts..."></textarea>
+                    </div>
+                    <div class="border-start border-3 border-secondary ps-3">
+                        <strong>{{ post.username }}</strong>
+                        <p class="mb-0">{{ post.content }}</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">
+                        <span class="material-symbols-outlined">repeat</span> Repost
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

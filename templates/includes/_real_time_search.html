@@ -1,0 +1,12 @@
+<div class="mb-1">
+    <div class="search-input-wrapper" onclick="document.getElementById('searchInput').focus()">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="searchInput" class="form-control search-input-with-icon" placeholder="Search KK">
+        <button class="search-clear-btn" id="clearSearchBtn" onclick="clearSearch(event)">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+</div>
+<div id="searchResultsBox" class="search-results-box">
+    <div id="searchResults"></div>
+</div>

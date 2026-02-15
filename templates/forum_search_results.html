@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <span class="material-symbols-outlined">search</span> Search Results
+            {% if query %}
+            for "{{ query }}"
+            {% endif %}
+        </h2>
+        
+        <a href="{{ url_for('forum.forums') }}" class="btn btn-outline-secondary mb-4">
+            <span class="material-symbols-outlined">arrow_back</span> Back to Forums
+        </a>
+        
+        {% if forums %}
+            <p class="text-muted mb-3">Found {{ forums|length }} forum(s)</p>
+            <div class="row">
+                {% for forum in forums %}
+                <div class="col-md-6 mb-3">
+                    <div class="forum-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">
+                                <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ forum.name }}
+                                </a>
+                            </h5>
+                            {% if forum.is_private %}
+                            <span class="badge bg-warning">
+                                <span class="material-symbols-outlined">lock</span> Private
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-2">{{ forum.description[:100] }}{% if forum.description|length > 100 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                            </small>
+                            <small class="text-muted">
+                                By {{ forum.creator_username }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                No forums found matching your search criteria. Try different keywords or filters.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

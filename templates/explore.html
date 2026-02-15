@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Explore / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Real-time search -->
+        {% include "includes/_real_time_search.html" %}
+
+        <!-- Forum Carousel -->
+        {% include "includes/_suggest_forum.html" %}
+    </div>
+</div>
+{% endblock %}

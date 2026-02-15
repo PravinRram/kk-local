@@ -1,0 +1,207 @@
+:root {
+    --kk-primary: #F06B42;
+    --kk-secondary: #FBC851;
+    --kk-bg-gray: #E5E5E5;
+    --kk-card-bg-selected: #FDE6BA;
+    --kk-card-border-selected: #F06B42;
+}
+
+body {
+    background-color: var(--kk-bg-gray);
+    font-family: 'Inter', sans-serif;
+}
+
+.ce-container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    min-height: 600px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.ce-header-link {
+    text-decoration: none;
+    color: #000;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.ce-header-link:hover {
+    color: var(--kk-primary);
+}
+
+.ce-progress-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.ce-step-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #333;
+    background: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.ce-step-circle:hover {
+    transform: scale(1.1);
+    background-color: #f8f9fa;
+    color: #333;
+    border-color: #ccc;
+}
+
+.ce-step-circle.active {
+    background: var(--kk-primary);
+    color: #fff;
+    border-color: var(--kk-primary);
+}
+
+.ce-step-circle.active:hover {
+    background: var(--kk-primary);
+    color: #fff;
+}
+
+.ce-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 30px;
+    font-size: 1.5rem;
+}
+
+.ce-option-card {
+    border: 2px solid #ddd; /* Default border */
+    background: #F9F9F9; /* Default bg */
+    border-radius: 12px;
+    padding: 30px;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 15px;
+}
+
+.ce-option-card:hover {
+    border-color: var(--kk-secondary);
+}
+
+/* Selected state - using a class or input:checked + label technique */
+.ce-option-card.selected {
+    background: #FEEBC8; /* Light orange/yellow */
+    border-color: var(--kk-primary);
+}
+
+.ce-option-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.ce-btn-next {
+    background: var(--kk-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+}
+
+.ce-btn-next:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Disable hover effect for the button as requested */
+.ce-btn-next:hover:not(:disabled) {
+    background: var(--kk-primary); /* Keep same color */
+    opacity: 1;
+}
+.ce-btn-next:disabled:hover {
+    background: #ccc;
+}
+
+.ce-form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.ce-form-control {
+    background: #E0E0E0;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+}
+.ce-form-control:focus {
+    background: #E0E0E0;
+    box-shadow: none;
+    outline: 2px solid var(--kk-primary);
+}
+
+.ce-ai-impact-box {
+    background: #FFF8E1; /* Light yellow */
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    padding: 20px;
+    font-size: 0.9rem;
+}
+
+.ce-review-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.ce-review-label {
+    color: #666;
+}
+.ce-review-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+.ce-btn-back {
+    background: #E0E0E0;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+.ce-btn-back:hover {
+    background: #d0d0d0;
+}
+
+.ce-btn-modal-cancel {
+    background: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+.ce-btn-modal-cancel:hover {
+    background: #f8f9fa;
+    border-color: #ccc;
+}

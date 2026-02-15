@@ -1,0 +1,101 @@
+{% block extra_css %}
+<link href="{{url_for('static', filename='css/navbar.css')}}" rel="stylesheet">
+{% endblock %}
+
+<nav class="navbar-vertical">
+    <div class="navbar-inside">
+        <div class="nav-items-container">
+            <div class="nav-items">
+                <a href="{{ url_for('forum.feed') }}" class="nav-item-button {% if current_endpoint in ['forum.feed', 'feed'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">home</span>
+                    </div>
+                    <div class="nav-item-text">Home</div>
+                </a>
+                
+                <a href="{{ url_for('forum.explore') }}" class="nav-item-button {% if current_endpoint in ['forum.explore', 'explore'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">search</span>
+                    </div>
+                    <div class="nav-item-text">Explore</div>
+                </a>
+
+                <a href="{{ url_for('forum.notifications') }}" class="nav-item-button {% if current_endpoint in ['forum.notifications', 'notifications'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">notifications</span>
+                    </div>
+                    <div class="nav-item-text">Notifications</div>
+                </a>
+
+                <a href="{{ url_for('forum.forums') }}" class="nav-item-button {% if current_endpoint in ['forum.forums', 'forum.forum_detail', 'forum.create_forum', 'forum.search_forums', 'forums', 'forum_detail', 'create_forum', 'search_forums'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">dynamic_feed</span>
+                    </div>
+                    <div class="nav-item-text">Forums</div>
+                </a>
+
+                <a href="{{ url_for('events.events') }}" class="nav-item-button {% if current_endpoint in ['events.events', 'events'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">calendar_month</span>
+                    </div>
+                    <div class="nav-item-text">Events</div>
+                </a>
+                
+                <a href="{{ url_for('karaoke') }}" class="nav-item-button {% if current_endpoint and current_endpoint.startswith('karaoke') %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">stadia_controller</span>
+                    </div>
+                    <div class="nav-item-text">Games</div>
+                </a>
+
+                <a href="#" class="nav-item-button">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">chat</span>
+                    </div>
+                    <div class="nav-item-text">Messages</div>
+                </a>
+
+                <a href="{{ url_for('auth.settings') }}" class="nav-item-button {% if current_endpoint in ['auth.settings', 'settings'] %}active{% endif %}">
+                    <div class="nav-item-icon">
+                        <span class="material-symbols-outlined">settings</span>
+                    </div>
+                    <div class="nav-item-text">Settings</div>
+                </a>
+                
+                <button type="button" class="new-post-button" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                    <div class="new-post-icon-text">
+                        <div class="new-post-icon">
+                            <span class="material-symbols-outlined">edit_square</span>
+                        </div>
+                        <div class="new-post-text">New Post</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="dropdown dropup">
+            <a href="#" class="account-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if current_user.profile_picture_url or current_user.profile_picture %}
+                <img src="{{ avatar_url(current_user.profile_picture_url or current_user.profile_picture) }}" class="account-icon" id="actual-pfp">
+                {% else %}
+                <div class="account-icon">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </div>
+                {% endif %}
+                <div class="account-text">{{ session.get('username') }}</div>
+            </a>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('auth.profile_public', username=session.get('username')) }}">
+                    <span class="material-symbols-outlined">person</span> My Profile
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.settings') }}">
+                    <span class="material-symbols-outlined">settings</span> Settings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                    <span class="material-symbols-outlined">logout</span> Logout
+                </a></li>
+            </ul>
+        </div>
+    </div>
+</nav>

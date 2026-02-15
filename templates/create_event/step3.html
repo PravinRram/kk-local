@@ -1,0 +1,283 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<div class="ce-progress-container">
+    <a href="{{ url_for('events.events_create_type') }}" class="ce-step-circle">1</a>
+    <a href="{{ url_for('events.events_create_details') }}" class="ce-step-circle">2</a>
+    <a href="{{ url_for('events.events_create_image') }}" class="ce-step-circle active">3</a>
+    <a href="{{ url_for('events.events_create_features') }}" class="ce-step-circle">4</a>
+    <a href="{{ url_for('events.events_create_review') }}" class="ce-step-circle">5</a>
+</div>
+
+<h2 class="ce-title">Event Image</h2>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-danger">{{ messages[0] }}</div>
+  {% endif %}
+{% endwith %}
+
+<form method="POST" enctype="multipart/form-data" id="imageForm">
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-6">
+            <div class="ce-option-card" id="uploadCard" onclick="triggerUpload()">
+                <input type="radio" name="image_source" id="imgUpload" value="upload" class="d-none" onchange="updateUI()" {% if new_event.image_source == 'upload' %}checked{% endif %}>
+                <div class="fs-1">🖼️</div>
+                <div class="fw-bold">Upload Image From your device</div>
+                <div id="fileNameDisplay" class="small text-muted mt-2 fst-italic">
+                    {% if new_event.image_source == 'upload' and new_event.image_path %}
+                        Selected: {{ new_event.image_path }}
+                    {% endif %}
+                </div>
+            </div>
+            <input type="file" id="fileInput" name="event_image" class="d-none" accept="image/*" onchange="handleFileSelect(this)">
+            <input type="hidden" name="image_path" id="hiddenImagePath" value="{{ new_event.image_path if new_event.image_source == 'upload' else '' }}">
+        </div>
+        <div class="col-md-6">
+            <div class="ce-option-card" id="aiCard" onclick="openAIModal()">
+                <input type="radio" name="image_source" id="imgAI" value="ai" class="d-none" onchange="updateUI()" {% if new_event.image_source == 'ai' %}checked{% endif %}>
+                 <div class="fs-1" id="aiCardIcon">✨</div>
+                <div class="fw-bold">Smart Match Image</div>
+                <div class="small text-muted">Auto-finds image based on description</div>
+                <div id="aiFileNameDisplay" class="small text-muted mt-2 fst-italic"></div>
+            </div>
+            <!-- Hidden input to store the final selected URL -->
+            <input type="hidden" name="ai_image_url" id="aiImageUrl" value="{{ new_event.image_path if new_event.image_source == 'ai' else '' }}">
+        </div>
+    </div>
+
+    <!-- Smart Match Modal -->
+    <div class="modal fade" id="aiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✨ Smart Image Match</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <!-- Image Preview Area -->
+                    <div id="imagePreviewContainer" class="p-3 mb-3 border rounded bg-light" style="min-height: 250px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div id="loadingSpinner" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <img id="fetchedImage" src="" class="img-fluid rounded d-none" style="max-height: 300px; object-fit: cover;">
+                        <div id="emptyState" class="text-muted">
+                            <p class="mb-2">We'll find an image based on your event description.</p>
+                            <button type="button" class="btn btn-primary" id="btnGenerate" onclick="fetchImage(0)">
+                                🔍 Find Image
+                            </button>
+                        </div>
+                        <div id="errorState" class="text-danger small d-none"></div>
+                    </div>
+                    
+                    <div id="queryDisplay" class="small text-muted fst-italic mb-3"></div>
+                    
+                    <!-- Controls (only visible after generation) -->
+                    <div id="resultControls" class="d-none d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary" id="btnReload" onclick="nextImage()">
+                            🔄 Try Another
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="confirmAIImage()">
+                            ✅ Use This Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-3 mt-5">
+        <a href="{{ url_for('events.events_create_details') }}" class="btn ce-btn-back">Back</a>
+        <button type="submit" class="btn ce-btn-next flex-grow-1" id="nextBtn" disabled>Next</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentOffset = 0;
+    let aiModal;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        aiModal = new bootstrap.Modal(document.getElementById('aiModal'));
+
+        // Pre-load image if one exists
+        const savedUrl = document.getElementById('aiImageUrl').value;
+        const aiRadio = document.getElementById('imgAI');
+        if (savedUrl && aiRadio.checked) {
+             // If we have a saved AI image, show it on the card
+             updateAICard(savedUrl);
+             // Also populate modal for later
+             showImageInModal(savedUrl);
+        }
+        
+        updateUI();
+    });
+
+    function openAIModal() {
+        // If already selected, or if user wants to change
+        aiModal.show();
+    }
+
+    function confirmAIImage() {
+        const img = document.getElementById('fetchedImage');
+        if (img.src && !img.classList.contains('d-none')) {
+            document.getElementById('aiImageUrl').value = img.src;
+            document.getElementById('imgAI').checked = true;
+            updateAICard(img.src);
+            aiModal.hide();
+            updateUI();
+        }
+    }
+
+    function updateAICard(url) {
+        const iconDiv = document.getElementById('aiCardIcon');
+        iconDiv.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100px; border-radius: 8px;">`;
+        document.getElementById('aiFileNameDisplay').textContent = "Image Selected";
+    }
+
+    function nextImage() {
+        currentOffset++;
+        fetchImage(currentOffset);
+    }
+
+    function fetchImage(offset) {
+        const spinner = document.getElementById('loadingSpinner');
+        const img = document.getElementById('fetchedImage');
+        const empty = document.getElementById('emptyState');
+        const error = document.getElementById('errorState');
+        const queryDisplay = document.getElementById('queryDisplay');
+        const controls = document.getElementById('resultControls');
+
+        // Reset UI
+        spinner.classList.remove('d-none');
+        img.classList.add('d-none');
+        empty.classList.add('d-none');
+        error.classList.add('d-none');
+        controls.classList.add('d-none');
+        
+        const fetchUrl = "{{ url_for('events.events_create_image_fetch') }}?offset=" + offset;
+        
+        fetch(fetchUrl)
+            .then(response => {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json().then(data => {
+                        if (!response.ok) throw new Error(data.error || "Server Error");
+                        return data;
+                    });
+                } else {
+                    return response.text().then(text => {
+                        console.error("Non-JSON response:", text);
+                        // Extract title from HTML if possible for better error message
+                        let errorMsg = "Received invalid response from server (" + response.status + ")";
+                        if (text.includes("<title>")) {
+                             const titleMatch = text.match(/<title>(.*?)<\/title>/);
+                             if (titleMatch) errorMsg += ": " + titleMatch[1];
+                        }
+                        throw new Error(errorMsg);
+                    });
+                }
+            })
+            .then(data => {
+                showImageInModal(data.image_url);
+                queryDisplay.textContent = `Found for: "${data.query}"`;
+            })
+            .catch(err => {
+                console.error(err);
+                error.textContent = err.message;
+                error.classList.remove('d-none');
+                // If "No description", maybe prompt user?
+                if (err.message.includes("No description")) {
+                     error.innerHTML = `Please <a href="{{ url_for('events.events_create_details') }}">add a description</a> first.`;
+                }
+            })
+            .finally(() => {
+                spinner.classList.add('d-none');
+            });
+    }
+
+    function showImageInModal(url) {
+        const img = document.getElementById('fetchedImage');
+        const empty = document.getElementById('emptyState');
+        const controls = document.getElementById('resultControls');
+        
+        img.src = url;
+        img.classList.remove('d-none');
+        empty.classList.add('d-none');
+        controls.classList.remove('d-none');
+    }
+
+    function triggerUpload() {
+        document.getElementById('fileInput').click();
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const fileName = file.name;
+            document.getElementById('fileNameDisplay').textContent = "Selected: " + fileName;
+            document.getElementById('hiddenImagePath').value = fileName; // Mock path
+            
+            // Read file for preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const iconDiv = document.querySelector('#uploadCard .fs-1');
+                if (iconDiv) {
+                    iconDiv.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 100px; border-radius: 8px;">`;
+                }
+            };
+            reader.readAsDataURL(file);
+
+            // Select the radio button
+            const uploadRadio = document.getElementById('imgUpload');
+            uploadRadio.checked = true;
+            
+            updateUI();
+        }
+    }
+
+    function selectAI() {
+        const aiRadio = document.getElementById('imgAI');
+        aiRadio.checked = true;
+        updateUI();
+    }
+
+    function updateUI() {
+        const upload = document.getElementById('imgUpload');
+        const ai = document.getElementById('imgAI');
+        const btn = document.getElementById('nextBtn');
+        const uploadCard = document.getElementById('uploadCard');
+        const aiCard = document.getElementById('aiCard');
+        
+        // Update card styles
+        uploadCard.classList.remove('selected');
+        aiCard.classList.remove('selected');
+        
+        if (upload.checked) {
+            uploadCard.classList.add('selected');
+        }
+        
+        if (ai.checked) {
+            aiCard.classList.add('selected');
+        }
+
+        // Update button state
+        let isValid = false;
+        if (upload.checked && document.getElementById('hiddenImagePath').value) isValid = true;
+        // Check if we have a fetched image URL for the AI option
+        if (ai.checked && document.getElementById('aiImageUrl').value) isValid = true;
+        
+        btn.disabled = !isValid;
+        if (isValid) {
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+        } else {
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.6';
+        }
+    }
+</script>
+{% endblock %}
+

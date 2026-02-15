@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create Event - KampongKonek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/create_event.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/create_event.js') }}"></script>
+</head>
+<body>
+    <div class="ce-container">
+        <div class="mb-4">
+            {% if from_ai_agent %}
+            <a href="{{ url_for('events.events_create_ai_session', session_id=ai_session_id) }}" class="ce-header-link">
+                <i class="bi bi-arrow-left"></i> Back to AI
+            </a>
+            {% else %}
+            <a href="#" class="ce-header-link" onclick="confirmExit(event)">
+                <i class="bi bi-arrow-left"></i> Back to events
+            </a>
+            {% endif %}
+        </div>
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Exit Confirmation Modal -->
+    <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Leave Event Creation?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    Are you sure you want to leave? Your progress will not be saved.
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center gap-3">
+                    <button type="button" class="btn ce-btn-modal-cancel rounded-pill px-5" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn ce-btn-next rounded-pill px-5" onclick="handleExit()">Yes, Leave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let exitModal;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            exitModal = new bootstrap.Modal(document.getElementById('exitModal'));
+        });
+
+        function confirmExit(e) {
+            e.preventDefault();
+            exitModal.show();
+        }
+
+        function handleExit() {
+            // Clear local storage data
+            localStorage.removeItem('kk_create_event_data');
+            window.location.href = "{{ url_for('events.events') }}";
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

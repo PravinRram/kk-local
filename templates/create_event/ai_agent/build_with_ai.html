@@ -1,0 +1,145 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 50vh;">
+    <h1 class="mb-5 fw-bold text-center" style="font-family: serif; font-size: 2.5rem;">What’s on the agenda today?</h1>
+    
+    <div class="w-100 position-relative" style="max-width: 650px;">
+        <form action="#" method="POST"> 
+            <div class="p-3" style="background-color: #E0E0E0; border-radius: 12px;">
+                <textarea class="form-control bg-transparent border-0" 
+                          id="landing-prompt"
+                          name="ai_prompt"
+                          placeholder="Plan anything with just one prompt..." 
+                          style="resize: none; box-shadow: none; font-size: 1.1rem; min-height: 60px;" rows="2"></textarea>
+                
+                <div class="d-flex justify-content-end align-items-center mt-3">
+                    <button type="submit" id="landing-submit-btn" class="btn btn-sm rounded-circle border border-secondary" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: transparent;" disabled>
+                        <i class="bi bi-arrow-up text-secondary"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if past_sessions %}
+    <div class="w-100 mt-5" style="max-width: 650px;">
+        <h5 class="mb-3 text-secondary">Past Sessions</h5>
+        <div class="list-group">
+            {% for session in past_sessions %}
+            <a href="{{ url_for('events.events_create_ai_session', session_id=session.session_id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold">Session #{{ session.session_id }}</span>
+                    <small class="text-muted ms-2">{{ session.updated_at }}</small>
+                    <div class="small text-muted text-truncate" style="max-width: 400px;">
+                        {% set draft = session.current_draft_json | fromjson %}
+                        {{ draft.event_name or "Untitled Event" }}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-{{ 'success' if session.status == 'finalized' else 'warning' }} rounded-pill">{{ session.status }}</span>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="event.preventDefault(); confirmDelete('{{ session.session_id }}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteSessionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Session</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this session? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteSessionForm" method="POST" action="">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none justify-content-center align-items-center bg-white" style="z-index: 2000;">
+        <div class="text-center">
+            <div class="spinner-grow mb-3" role="status" style="width: 3rem; height: 3rem; color: #F06B42;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4 class="fw-light fade-in-text">Planning your event...</h4>
+            <p class="text-muted small">This may take a few seconds</p>
+        </div>
+    </div>
+
+    <style>
+        .fade-in-text {
+            animation: fadeIn 1.5s infinite alternate;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
+    </style>
+
+    <script>
+        function confirmDelete(sessionId) {
+            const modal = new bootstrap.Modal(document.getElementById('deleteSessionModal'));
+            document.getElementById('deleteSessionForm').action = `/events/create/ai-agent/${sessionId}/delete`;
+            modal.show();
+        }
+
+        const landingInput = document.getElementById('landing-prompt');
+        const landingBtn = document.getElementById('landing-submit-btn');
+        const landingIcon = landingBtn.querySelector('i');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const form = document.querySelector('form[action="#"]');
+
+        function showLoading() {
+            loadingOverlay.classList.remove('d-none');
+            loadingOverlay.classList.add('d-flex');
+        }
+
+        landingInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0) {
+                landingBtn.removeAttribute('disabled');
+                landingBtn.classList.remove('border-secondary');
+                landingBtn.classList.add('bg-dark', 'border-dark');
+                landingIcon.classList.remove('text-secondary');
+                landingIcon.classList.add('text-white');
+            } else {
+                landingBtn.setAttribute('disabled', 'true');
+                landingBtn.classList.add('border-secondary');
+                landingBtn.classList.remove('bg-dark', 'border-dark');
+                landingIcon.classList.add('text-secondary');
+                landingIcon.classList.remove('text-white');
+            }
+        });
+        
+        landingInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!landingBtn.disabled) {
+                    showLoading();
+                    this.form.submit();
+                }
+            }
+        });
+
+        // Handle button click (form submit)
+        if (form) {
+            form.addEventListener('submit', function() {
+                showLoading();
+            });
+        }
+    </script>
+</div>
+{% endblock %}

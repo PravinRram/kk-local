@@ -1,0 +1,39 @@
+{% extends "_includes/karaoke-base.html" %} {% block title %}My Scores{%
+endblock %} {% block content %}
+<h1 class="mb-4">My Past Scores</h1>
+
+{% if scores %}
+<div class="list-group">
+  {% for score in scores %}
+  <div
+    class="list-group-item list-group-item-action flex-column align-items-start"
+  >
+    <div class="d-flex w-100 justify-content-between">
+      <h5 class="mb-1">
+        {{ score.session.song.title }} - {{ score.session.song.artist }}
+      </h5>
+      <small>{{ score.created_at.strftime('%Y-%m-%d') }}</small>
+    </div>
+    <p class="mb-1">
+      <strong>Score: {{ score.score }}</strong> | Accuracy: {{
+      score.accuracy|round(1)|default('N/A', true) }}% | Timing: {{
+      score.timing|round(1)|default('N/A', true) }}%
+    </p>
+    <form
+      action="{{ url_for('scores_delete_score', score_id=score.id) }}"
+      method="POST"
+      onsubmit="return confirm('Are you sure you want to delete this score?');"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn btn-sm btn-danger mt-2">
+        Delete Score
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info" role="alert">
+  You haven't recorded any scores yet. Go sing a song!
+</div>
+{% endif %} {% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ hashtag }} / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row pt-3">
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <a href="javascript:history.back()" class="btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h2 class="mb-0">{{ hashtag }}</h2>
+            </div>
+            
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <span class="material-symbols-outlined">filter_list</span>Filter by
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item {% if current_filter == 'recent' %}active{% endif %}" 
+                        href="{{ url_for('forum.hashtag_posts', hashtag=hashtag[1:] if hashtag.startswith('#') else hashtag, filter='recent') }}">
+                            <span class="material-symbols-outlined">schedule</span>Most Recent
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {% if current_filter == 'liked' %}active{% endif %}" 
+                        href="{{ url_for('forum.hashtag_posts', hashtag=hashtag[1:] if hashtag.startswith('#') else hashtag, filter='liked') }}">
+                            <span class="material-symbols-outlined">favorite</span>Most Liked
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {% if current_filter == 'activity' %}active{% endif %}" 
+                        href="{{ url_for('forum.hashtag_posts', hashtag=hashtag[1:] if hashtag.startswith('#') else hashtag, filter='activity') }}">
+                            <span class="material-symbols-outlined">trending_up</span>Most Activity
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if posts %}
+            <p class="text-muted mb-3">{{ posts|length }} post(s) with this hashtag</p>
+            {% for post in posts %}
+                {% include "includes/_post_card.html" %}
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                No posts found with this hashtag.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

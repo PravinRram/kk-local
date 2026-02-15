@@ -1,0 +1,64 @@
+Error loading leaderboard: Error: Failed to load leaderboard data.
+    loadLeaderboard http://127.0.0.1:1234/static/karaoke/leaderboard.js:10
+    async* http://127.0.0.1:1234/static/karaoke/leaderboard.js:2
+    EventListener.handleEvent* http://127.0.0.1:1234/static/karaoke/leaderboard.js:1
+leaderboard.js:15:13
+    loadLeaderboard http://127.0.0.1:1234/static/karaoke/leaderboard.js:15
+    <anonymous> http://127.0.0.1:1234/static/karaoke/leaderboard.js:2
+    (Async: EventListener.handleEvent)
+    <anonymous> http://127.0.0.1:1234/static/karaoke/leaderboard.js:1
+
+GET
+	
+scheme
+	http
+host
+	127.0.0.1:1234
+filename
+	/leaderboard/data
+Address
+	127.0.0.1:1234
+Status
+404
+NOT FOUND
+VersionHTTP/1.1
+Transferred388 B (207 B size)
+Referrer Policystrict-origin-when-cross-origin
+DNS ResolutionSystem
+
+    	
+    Connection
+    	close
+    Content-Length
+    	207
+    Content-Type
+    	text/html; charset=utf-8
+    Date
+    	Wed, 28 Jan 2026 08:16:17 GMT
+    Server
+    	Werkzeug/3.1.4 Python/3.14.0
+    	
+    Accept
+    	*/*
+    Accept-Encoding
+    	gzip, deflate, br, zstd
+    Accept-Language
+    	en-US,en;q=0.9
+    Connection
+    	keep-alive
+    Cookie
+    	kk_user_id=user_f72153a8
+    Host
+    	127.0.0.1:1234
+    Priority
+    	u=4
+    Referer
+    	http://127.0.0.1:1234/karaoke/leaderboard
+    Sec-Fetch-Dest
+    	empty
+    Sec-Fetch-Mode
+    	cors
+    Sec-Fetch-Site
+    	same-origin
+    User-Agent
+    	Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0

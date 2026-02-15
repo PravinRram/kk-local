@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='auth/css/style.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css" />
+<style>
+  .page-wrapper {
+    padding-right: 0 !important;
+  }
+  .content-header {
+    right: 0 !important;
+  }
+  .main-content {
+    max-width: 100% !important;
+    padding: 82px 10px 10px 10px !important;
+  }
+  .setup-guide {
+    top: 0 !important;
+    margin-top: 0 !important;
+  }
+  .setup-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+</style>
+{% endblock %}
+{% block content %}
+  <section class="content-grid {% if not setup_mode %}no-guide{% endif %}">
+    <div>
+      <h2>Edit Your Profile</h2>
+      <p class="muted">Make your profile shine and connect with others</p>
+
+      <form method="post" enctype="multipart/form-data" class="form">
+        {{ csrf_token() }}
+        <div class="card section-card">
+          <h3>Profile Photo</h3>
+          <div class="profile-photo-row">
+            <img
+              class="avatar"
+              src="{{ avatar_url(user.profile_picture_url) }}"
+              alt="Profile picture"
+              data-current-avatar="{{ avatar_url(user.profile_picture_url) }}"
+            />
+            <div class="profile-photo-actions">
+              <label class="button primary" for="profile-picture-input">Upload Photo</label>
+              <input
+                id="profile-picture-input"
+                type="file"
+                name="profile_picture"
+                accept=".png,.jpg,.jpeg,.webp"
+                hidden
+              />
+              <input type="hidden" name="cropped_avatar" id="cropped-avatar" />
+              <p class="muted small">Choose a clear, friendly photo.</p>
+              {% if errors.profile_picture %}
+                <div class="field-error">{{ errors.profile_picture }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="avatar-cropper-modal is-hidden" data-cropper-panel>
+            <div class="cropper-backdrop" data-cancel-crop></div>
+
+            <div class="cropper-dialog" role="dialog" aria-modal="true" aria-label="Crop profile photo">
+              <div class="cropper-frame">
+                <img id="cropper-image" alt="Crop preview" />
+              </div>
+
+              <div class="button-row">
+                <button class="button primary small" type="button" data-apply-crop>Apply Crop</button>
+                <button class="button outline small" type="button" data-cancel-crop>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <h3>User Information</h3>
+          <div class="two-col">
+            <div>
+              <label>Username</label>
+              <input
+                type="text"
+                name="username"
+                value="{{ request.form.username or user.username }}"
+              />
+              {% if errors.username %}
+                <div class="field-error">{{ errors.username }}</div>
+              {% endif %}
+              <p class="muted small">Changing your username updates your profile link.</p>
+            </div>
+            <div>
+              <label>Display Name</label>
+              <input
+                type="text"
+                name="display_name"
+                value="{{ request.form.display_name or user.display_name or '' }}"
+              />
+              {% if errors.display_name %}
+                <div class="field-error">{{ errors.display_name }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <label>Gender</label>
+              <select name="gender">
+                <option value="">Select gender</option>
+                <option value="male" {% if (request.form.gender or user.gender) == "male" %}selected{% endif %}>Male</option>
+                <option value="female" {% if (request.form.gender or user.gender) == "female" %}selected{% endif %}>Female</option>
+              </select>
+              {% if errors.gender %}
+                <div class="field-error">{{ errors.gender }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <label>General Location</label>
+              <input
+                type="text"
+                name="location"
+                id="location-input"
+                list="location-list"
+                placeholder="Search Singapore location"
+                value="{{ request.form.location or user.location or '' }}"
+              />
+              <datalist id="location-list"></datalist>
+              {% if errors.location %}
+                <div class="field-error">{{ errors.location }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <label>Birthday</label>
+              <input
+                class="date-input"
+                type="date"
+                name="date_of_birth"
+                data-setup="birthday"
+                value="{{ request.form.date_of_birth or (user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth else '') }}"
+              />
+              {% if errors.date_of_birth %}
+                <div class="field-error">{{ errors.date_of_birth }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <label>Youth / Senior</label>
+              <select name="age_group">
+                <option value="">Select group</option>
+                <option value="youth" {% if (request.form.age_group or user.age_group) == "youth" %}selected{% endif %}>Youth</option>
+                <option value="senior" {% if (request.form.age_group or user.age_group) == "senior" %}selected{% endif %}>Senior</option>
+              </select>
+              {% if errors.age_group %}
+                <div class="field-error">{{ errors.age_group }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <h3>Bio/About Me</h3>
+          <textarea class="bio-textarea" name="bio" rows="4" data-setup="bio">{{ request.form.bio or user.bio or '' }}</textarea>
+          {% if errors.bio %}
+            <div class="field-error">{{ errors.bio }}</div>
+          {% endif %}
+        </div>
+
+        <div class="card section-card">
+          <h3>Website</h3>
+          <button class="button outline" type="button" data-toggle="website">Add link</button>
+          <div class="optional-field {% if request.form.website or user.website %}is-visible{% endif %}">
+            <div class="optional-field-row">
+              <input
+                type="text"
+                name="website"
+                value="{{ request.form.website or user.website or '' }}"
+                placeholder="https://example.com"
+              />
+              <button class="button outline small" type="button" data-remove="website">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <h3>Interests &amp; Hobbies</h3>
+          <input type="text" class="tag-search" placeholder="Search hobbies" data-hobby-search />
+          <div class="tag-grid" data-setup="hobbies">
+            {% set selected_ids = request.form.getlist('hobbies') if request.method == 'POST' else None %}
+            {% for hobby in hobbies %}
+              <label class="tag" data-hobby-name="{{ hobby.name|lower }}">
+                <input
+                  type="checkbox"
+                  name="hobbies"
+                  value="{{ hobby.id }}"
+                  {% if selected_ids is not none %}
+                    {% if hobby.id|string in selected_ids %}checked{% endif %}
+                  {% else %}
+                    {% if hobby in user.hobbies %}checked{% endif %}
+                  {% endif %}
+                />
+                <span>{{ hobby.name }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <h3>Privacy</h3>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="privacy" value="public" {% if (request.form.privacy or user.privacy) != "private" %}checked{% endif %} />
+              Public
+            </label>
+            <label>
+              <input type="radio" name="privacy" value="private" {% if (request.form.privacy or user.privacy) == "private" %}checked{% endif %} />
+              Private
+            </label>
+          </div>
+          {% if errors.privacy %}
+            <div class="field-error">{{ errors.privacy }}</div>
+          {% endif %}
+        </div>
+
+        <div class="button-row spaced">
+          <a class="button danger" href="{{ url_for('auth.delete_account') }}">Delete Account</a>
+          <button class="button primary" type="submit">
+            {{ "Save Profile" if setup_mode else "Save Changes" }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <aside class="setup-guide {% if not setup_mode %}is-hidden{% endif %}">
+      <div class="setup-card">
+        <div class="setup-header">
+          <div>
+            <h3>Profile Setup</h3>
+            <p class="muted">Complete your profile</p>
+            {% if missing_fields %}
+            <p class="text-danger small">Missing: {{ missing_fields|join(', ') }}</p>
+            {% endif %}
+          </div>
+          <button class="icon-button setup-close is-hidden" data-dismiss=".setup-guide">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="setup-progress">
+          <div class="setup-circle">0%</div>
+          <p class="muted">0 of 4 steps completed</p>
+        </div>
+        <ul class="setup-list" data-setup-list>
+          <li data-step="photo">Upload Profile Photo</li>
+          <li data-step="basic">Add Birthday and location</li>
+          <li data-step="bio">Add Bio/About Me</li>
+          <li data-step="hobbies">Add interest tags</li>
+        </ul>
+        <div class="setup-callout">
+          <strong data-setup-status>Almost there!</strong>
+          <p class="muted" data-setup-subtext>Complete the steps.</p>
+        </div>
+      </div>
+    </aside>
+  </section>
+  <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+  <script src="{{ url_for('static', filename='auth/js/profile_edit.js') }}"></script>
+{% endblock %}
+
+{% block sidebar %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="card">
+    <h2>Followers of {{ user.display_name or user.username }}</h2>
+    <div class="list-grid">
+      {% for follower in followers %}
+        <div class="list-card">
+          <div class="mutual-avatar">{{ follower.display_name[:1] if follower.display_name else follower.username[:1] }}</div>
+          <div>
+            <strong>{{ follower.display_name or follower.username }}</strong>
+            <p class="muted">@{{ follower.username }}</p>
+          </div>
+          <a class="button outline" href="{{ url_for('auth.profile_public', username=follower.username) }}">View</a>
+        </div>
+      {% else %}
+        <p class="muted">No followers yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

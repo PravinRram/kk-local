@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Notifications / KampongKonek{% endblock %}
+
+{% block content %}
+<div style="padding: 10px;">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <span class="material-symbols-outlined">notifications</span>
+                    Notifications
+                </h2>
+                {% if notifications %}
+                <button
+                    class="btn btn-outline-danger btn-sm"
+                    onclick="markAllRead()"
+                >
+                    <span class="material-symbols-outlined">delete_sweep</span> Clear All
+                </button>
+                {% endif %}
+            </div>
+
+            {% if notifications %} {% for notification in notifications %}
+            <div
+                class="card mb-3 {% if not notification.is_read %}border-primary{% endif %}"
+            >
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            {% if notification.type == 'reply' %}
+                            <span class="material-symbols-outlined text-primary"
+                                >chat</span
+                            >
+                            <strong>New Reply</strong>
+                            {% elif notification.type == 'mention' %}
+                            <span class="material-symbols-outlined text-info"
+                                >alternate_email</span
+                            >
+                            <strong>You were mentioned</strong>
+                            {% elif notification.type == 'forum_activity' %}
+                            <span class="material-symbols-outlined text-success"
+                                >forum</span
+                            >
+                            <strong>Forum Activity</strong>
+                            {% elif notification.type == 'post_activity' %}
+                            <span class="material-symbols-outlined text-danger"
+                                >favorite</span
+                            >
+                            <strong>Post Activity</strong>
+                            {% elif notification.type == 'follow' %}
+                            <span class="material-symbols-outlined text-warning"
+                                >person_add</span
+                            >
+                            <strong>New Follower</strong>
+                            {% elif notification.type == 'friend_request' %}
+                            <span class="material-symbols-outlined text-primary"
+                                >group_add</span
+                            >
+                            <strong>Friend Request</strong>
+                            {% endif %}
+
+                            <p class="mb-1 mt-2">{{ notification.content }}</p>
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined"
+                                    >schedule</span
+                                >
+                                {{ notification.created_at.strftime('%B %d, %Y at
+                                %I:%M %p') }}
+                            </small>
+                        </div>
+
+                        <div class="d-flex align-items-start">
+                            {% if not notification.is_read %}
+                            <button
+                                class="btn btn-sm btn-outline-primary me-2"
+                                onclick="markAsRead({{ notification.id }})"
+                            >
+                                <span class="material-symbols-outlined">check</span>
+                                Mark Read
+                            </button>
+                            {% else %}
+                            <span class="badge bg-secondary">Read</span>
+                            {% endif %} {% if notification.related_id %} {% if
+                            notification.type in ['reply', 'post_activity',
+                            'mention'] %}
+                            <a
+                                href="{{ url_for('forum.post_detail', post_id=notification.related_id) }}"
+                                class="btn btn-sm btn-outline-secondary"
+                            >
+                                <span class="material-symbols-outlined"
+                                    >visibility</span
+                                >
+                                View
+                            </a>
+                            {% elif notification.type == 'forum_activity' %}
+                            <a
+                                href="{{ url_for('forum.forum_detail', forum_id=notification.related_id) }}"
+                                class="btn btn-sm btn-outline-secondary"
+                            >
+                                <span class="material-symbols-outlined"
+                                    >visibility</span
+                                >
+                                View
+                            </a>
+                            {% elif notification.type in ['follow',
+                            'friend_request'] %}
+                            <a
+                                href="{{ url_for('auth.profile', user_id=notification.related_id) }}"
+                                class="btn btn-sm btn-outline-secondary"
+                            >
+                                <span class="material-symbols-outlined"
+                                    >visibility</span
+                                >
+                                View Profile
+                            </a>
+                            {% endif %} {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                You have no notifications yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function markAsRead(notificationId) {
+            fetch(`/notifications/mark-read/${notificationId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+        }
+
+        function markAllRead() {
+            const modal = new bootstrap.Modal(document.getElementById('markAllReadModal'));
+            modal.show();
+        }
+
+        function confirmMarkAllRead() {
+            fetch("/notifications/mark-all-read", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+        }
+    </script>
+
+    <!-- Clear All Confirmation Modal -->
+    <div class="modal fade" id="markAllReadModal" tabindex="-1" aria-labelledby="markAllReadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="markAllReadModalLabel">Confirm Clear All</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to clear all notifications? This cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmMarkAllRead()">Clear All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

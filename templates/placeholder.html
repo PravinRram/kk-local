@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="card centered">
+    <h2>{{ title }} (Placeholder)</h2>
+    <p class="muted">This page will be built in a future update.</p>
+    {% if title == "Settings" %}
+      <div class="spacer-top">
+        <a class="button outline" href="{{ url_for('auth.change_password') }}">
+          Change Password
+        </a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

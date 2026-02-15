@@ -1,0 +1,31 @@
+<div
+  class="bottom-bar mx-auto d-flex align-items-center justify-content-between"
+>
+  <div class="bar-button bar-button-left activity-bar-buttons">
+    {% block bottom_left %}
+    <i data-feather="alert-triangle"></i>
+    {% endblock %}
+  </div>
+
+  <div class="bar-button-group d-flex gap-2">
+    {% block bottom_center %}
+    <div class="bar-button bar-button-center activity-bar-buttons">
+      <i data-feather="headphones"></i>
+    </div>
+    <div class="bar-button bar-button-center activity-bar-buttons" id="micBtn">
+      <i data-feather="mic"></i>
+    </div>
+    <button type="button" data-bs-toggle="modal" data-bs-target="#songModal">
+      <div class="bar-button bar-button-center activity-bar-buttons">
+        <i data-feather="play"></i>
+      </div>
+    </button>
+    {% endblock %}
+  </div>
+
+  <div class="bar-button bar-button-right activity-bar-buttons">
+    {% block bottom_right %}
+    <i data-feather="log-out"></i>
+    {% endblock %}
+  </div>
+</div>

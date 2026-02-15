@@ -1,0 +1,214 @@
+{% extends "events/base.html" %}
+
+{% block content %}
+<style>
+  /* Force image and card body to share height equally */
+  .kk-event-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .kk-card-image {
+    flex: 1;
+    position: relative;
+    min-height: 200px; /* Minimum height to ensure visibility */
+    overflow: hidden;
+  }
+  .kk-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .kk-event-card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+</style>
+  <div class="kk-content-wrapper">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="fw-bold mb-0">{{ page_title }}</h4>
+    </div>
+
+    {% if events and events|length > 0 %}
+    <div class="row g-3">
+      {% for e in events %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card kk-event-card h-100 position-relative">
+            <div class="kk-card-image position-relative">
+              <img class="img-fluid rounded-top" src="{{ e.image_url if e.image_url else 'https://images.unsplash.com/photo-1521335629791-ce4aecadf3ff?w=800&q=80&auto=format&fit=crop' }}" alt="Event image">
+              
+              <div class="dropdown position-absolute top-0 end-0 m-2" style="z-index: 2;">
+                <button class="btn btn-light kk-card-menu rounded-circle kk-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="https://calendar.google.com/calendar/render?action=TEMPLATE&text={{ e.title | urlencode }}&dates={{ e.start_date | replace('-','') }}T{{ e.start_time | replace(':','') }}00/{{ e.end_date | replace('-','') }}T{{ e.end_time | replace(':','') }}00&details={{ e.description | urlencode }}&location={{ e.location | urlencode }}" target="_blank">
+                            <i class="bi bi-calendar-plus me-2"></i>Add to Calendar
+                        </a>
+                    </li>
+                    {% if current_user.user_id == e.host_id %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-edit-url="{{ url_for('events.events_edit', event_id=e.event_id) }}"
+                           data-event-name="{{ e.title }}"
+                           data-event-type="{{ e.type }}"
+                           data-event-visibility="{{ e.visibility }}"
+                           data-group-chat="{{ 'true' if e.enable_group_chat else 'false' }}"
+                           data-minigames="{{ 'true' if e.enable_minigames else 'false' }}"
+                           data-event-description="{{ e.description or '' }}"
+                           onclick="openEditEventModal(
+                               this.getAttribute('data-edit-url'),
+                               this.getAttribute('data-event-name'),
+                               this.getAttribute('data-event-type'),
+                               this.getAttribute('data-event-visibility'),
+                               this.getAttribute('data-group-chat') === 'true',
+                               this.getAttribute('data-minigames') === 'true',
+                               this.getAttribute('data-event-description')
+                           ); return false;">
+                            <i class="bi bi-pencil me-2"></i>Edit Event
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" 
+                           data-delete-url="{{ url_for('events.events_delete', event_id=e.event_id) }}"
+                           onclick="confirmDeleteEvent(this.getAttribute('data-delete-url')); return false;">
+                            <i class="bi bi-trash me-2"></i>Delete Event
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="small fw-bold text-dark">{{ e.date_line }}</div>
+              <h6 class="card-title mt-1">
+                {{ e.title }}
+              </h6>
+              <a href="{{ url_for('events.events_detail', event_code=e.event_code) }}" class="stretched-link"></a>
+              <div class="text-muted small">Type: {{ e.type }}, {{ e.visibility }}</div>
+              {% if e.location %}<div class="small text-truncate" title="{{ e.location }}">Venue: {{ e.location }}</div>{% endif %}
+              {% if e.display_date %}<div class="small">Date: {{ e.display_date }}</div>{% endif %}
+              {% if e.display_start_time %}<div class="small">Time: {{ e.display_start_time }}{% if e.display_end_time %} – {{ e.display_end_time }}{% endif %}</div>{% endif %}
+            </div>
+            <div class="card-footer bg-transparent" style="position: relative; z-index: 2;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                  {% if e.user_status == 'host' %}
+                    {# Host View #}
+                    <a href="{{ url_for('events.events_detail', event_code=e.event_code) }}" class="btn btn-warning btn-sm">
+                      <i class="bi bi-gear-fill me-1"></i>Manage
+                    </a>
+                  {% elif e.user_status == 'going' %}
+                    {# Joined Button (Triggers Leave Modal) #}
+                    <button type="button" class="btn btn-success btn-sm"
+                            data-leave-url="{{ url_for('events.events_leave', event_id=e.event_id) }}"
+                            data-event-title="{{ e.title }}"
+                            onclick="confirmLeave(this.getAttribute('data-leave-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-check-circle-fill me-1"></i>Joined
+                    </button>
+                  {% else %}
+                    {# Join Button (Triggers Join Modal) #}
+                    <button type="button" class="btn btn-primary btn-sm" 
+                            data-join-url="{{ url_for('events.events_join', event_id=e.event_id) }}"
+                            data-event-title="{{ e.title }}"
+                            onclick="confirmJoin(this.getAttribute('data-join-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-plus-circle me-1"></i>Join
+                    </button>
+
+                    {# Interested Button #}
+                    {% if e.user_status == 'interested' %}
+                      <a href="{{ url_for('events.events_interested', event_id=e.event_id) }}" class="btn btn-warning btn-sm" title="Click to remove interest">
+                        <i class="bi bi-star-fill me-1"></i>Interested
+                      </a>
+                    {% else %}
+                      <a href="{{ url_for('events.events_interested', event_id=e.event_id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-star me-1"></i>Interested
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn btn-outline-secondary btn-sm" 
+                          data-share-url="{{ url_for('events.events_detail', event_code=e.event_code) }}"
+                          onclick="openShareModal(this.getAttribute('data-share-url'))">
+                    <i class="bi bi-share"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="kk-empty p-5 text-center bg-white border rounded">
+        <h5 class="mb-2">No events found</h5>
+        <p class="text-muted mb-3">Join events or mark them as interested to see them here!</p>
+        <a class="btn btn-secondary" href="{{ url_for('events.events') }}">Explore Events</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Join Confirmation Modal -->
+  <div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Join</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to join <strong id="joinEventName"></strong>?</p>
+          <p class="text-muted small">Joining this event will also mark you as interested.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a href="#" id="confirmJoinBtn" class="btn btn-primary">Confirm & Join</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Confirmation Modal -->
+  <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Leave Event</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to leave <strong id="leaveEventName"></strong>?</p>
+          <p class="text-muted small">This will also remove it from your interests.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a href="#" id="confirmLeaveBtn" class="btn btn-danger">Leave Event</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function confirmJoin(url, eventName) {
+      document.getElementById('joinEventName').textContent = eventName;
+      document.getElementById('confirmJoinBtn').href = url;
+      var myModal = new bootstrap.Modal(document.getElementById('joinModal'));
+      myModal.show();
+    }
+
+    function confirmLeave(url, eventName) {
+      document.getElementById('leaveEventName').textContent = eventName;
+      document.getElementById('confirmLeaveBtn').href = url;
+      var myModal = new bootstrap.Modal(document.getElementById('leaveModal'));
+      myModal.show();
+    }
+  </script>
+{% endblock %}

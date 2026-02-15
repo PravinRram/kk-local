@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block header %}{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='auth/css/style.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css" />
+{% endblock %}
+
+{% block content %}
+  <section class="register-layout">
+    <div class="card auth-card wide">
+      <h2 class="center-text">Create Your Account</h2>
+      <p class="center-text muted">Join our community and connect across generations</p>
+
+      <div class="step-row">
+        <span>Step {{ step }} of 5</span>
+        <span>{{ (step * 20) }}%</span>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" style="width: {{ step * 20 }}%;"></div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="form">
+        {{ csrf_token() }}
+        <input type="hidden" name="step" value="{{ step }}" />
+
+        {# Hidden inputs to preserve data from previous steps #}
+        {% if step != 1 %}
+          <input type="hidden" name="username" value="{{ request.form.username or data.username or '' }}">
+          <input type="hidden" name="display_name" value="{{ request.form.display_name or data.display_name or '' }}">
+        {% endif %}
+        {% if step != 2 %}
+          <input type="hidden" name="email" value="{{ request.form.email or data.email or '' }}">
+        {% endif %}
+        {% if step != 3 %}
+          <input type="hidden" name="password" value="{{ request.form.password or data.password or '' }}">
+        {% endif %}
+        {% if step != 4 %}
+          <input type="hidden" name="date_of_birth" value="{{ request.form.date_of_birth or data.date_of_birth or '' }}">
+        {% endif %}
+
+        {% if step == 1 %}
+          <div class="step-icon"><i data-feather="user"></i></div>
+          <h3 class="center-text">What's your name?</h3>
+          <p class="center-text muted">This is how others will see you</p>
+          <label>Username</label>
+          <input
+            type="text"
+            name="username"
+            placeholder="Enter your username"
+            value="{{ request.form.username or data.username or '' }}"
+          />
+          {% if errors.username %}
+            <div class="field-error">{{ errors.username }}</div>
+          {% endif %}
+
+          <label>Display Name</label>
+          <input
+            type="text"
+            name="display_name"
+            placeholder="Enter your display name"
+            value="{{ request.form.display_name or data.display_name or '' }}"
+          />
+          {% if errors.display_name %}
+            <div class="field-error">{{ errors.display_name }}</div>
+          {% endif %}
+        {% elif step == 2 %}
+          <div class="step-icon"><i data-feather="mail"></i></div>
+          <h3 class="center-text">How can we reach you?</h3>
+          <p class="center-text muted">We'll use this to contact you if needed</p>
+          <label>Email</label>
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            value="{{ request.form.email or data.email or '' }}"
+          />
+          {% if errors.email %}
+            <div class="field-error">{{ errors.email }}</div>
+          {% endif %}
+        {% elif step == 3 %}
+          <div class="step-icon"><i data-feather="lock"></i></div>
+          <h3 class="center-text">Create a password</h3>
+          <p class="center-text muted">
+            Use at least 8 characters, with uppercase, lowercase, and a number.
+          </p>
+          <label>Password</label>
+          <div class="password-field">
+            <input
+              type="password"
+              name="password"
+              id="password-input"
+              placeholder="Enter your password"
+              minlength="8"
+              pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}"
+              title="At least 8 characters, with uppercase, lowercase, and a number."
+              required
+            />
+            <button type="button" class="toggle-password" data-target="password-input" aria-label="Show password">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+          {% if errors.password %}
+            <div class="field-error">{{ errors.password }}</div>
+          {% endif %}
+          <ul class="checklist" data-password-checklist>
+            <li data-check="length">At least 8 characters</li>
+            <li data-check="upper">Contains an uppercase letter</li>
+            <li data-check="lower">Contains a lowercase letter</li>
+            <li data-check="number">Contains a number</li>
+          </ul>
+        {% elif step == 4 %}
+          <div class="step-icon"><i data-feather="calendar"></i></div>
+          <h3 class="center-text">Enter your birthday</h3>
+          <p class="center-text muted">We'll auto-calculate your age and age group</p>
+
+          <label>Birthday</label>
+          <input
+            class="date-input"
+            type="date"
+            name="date_of_birth"
+            value="{{ request.form.date_of_birth or data.date_of_birth or '' }}"
+          />
+          {% if errors.date_of_birth %}
+            <div class="field-error">{{ errors.date_of_birth }}</div>
+          {% endif %}
+
+          {# Age and age group are auto-calculated; no extra inputs needed. #}
+        {% elif step == 5 %}
+          <div class="step-icon"><i data-feather="camera"></i></div>
+          <h3 class="center-text">Add a profile photo</h3>
+          <p class="center-text muted">Tap to upload a photo from your device</p>
+          <div class="photo-upload">
+            <label class="photo-upload-btn" for="register-photo">
+              <i data-feather="camera"></i>
+              <img class="photo-preview" alt="Profile preview" />
+            </label>
+            <input id="register-photo" type="file" name="profile_picture" accept=".png,.jpg,.jpeg,.webp" />
+            <input type="hidden" name="cropped_avatar" id="register-cropped-avatar" />
+            <p class="muted small">Upload profile photo (optional)</p>
+          </div>
+          {% if errors.profile_picture %}
+            <div class="field-error">{{ errors.profile_picture }}</div>
+          {% endif %}
+
+          <div class="avatar-cropper-modal is-hidden" data-cropper-panel>
+            <div class="cropper-backdrop" data-cancel-crop></div>
+
+            <div class="cropper-dialog" role="dialog" aria-modal="true" aria-label="Crop profile photo">
+              <div class="cropper-frame">
+                <img id="cropper-image" alt="Crop preview" />
+              </div>
+
+              <div class="button-row">
+                <button class="button primary small" type="button" data-apply-crop>Apply Crop</button>
+                <button class="button outline small" type="button" data-cancel-crop>Cancel</button>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="button-row {% if step == 1 %}centered-row{% else %}spaced{% endif %}">
+          {% if step < 5 %}
+            <button class="button primary" type="submit" name="action" value="next">Continue</button>
+          {% else %}
+            <button class="button primary" type="submit" name="action" value="create">Create Account</button>
+          {% endif %}
+
+          {% if step > 1 %}
+            <button class="button outline" type="submit" name="action" value="back">Back</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </section>
+  <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+  <script src="{{ url_for('static', filename='auth/js/register.js') }}"></script>
+{% endblock %}

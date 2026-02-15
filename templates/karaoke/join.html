@@ -1,0 +1,825 @@
+{% extends "_includes/karaoke-base.html" %} {% block title %}Kampong Konek |
+Join Karaoke Session{% endblock %} {% block page_layout %}
+<!-- 3-Column Karaoke Layout -->
+<div class="karaoke-container">
+    <!-- Left Sidebar -->
+    <div class="karaoke-sidebar karaoke-sidebar-left">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <i data-feather="list"></i>
+                <h6>Your Queue</h6>
+            </div>
+            <div id="queueContainer" class="queue-list">
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-header mt-3">
+                <i data-feather="users"></i>
+                <h6>Participants</h6>
+            </div>
+            <div id="participantsContainer" class="participants-list">
+                <div class="small text-muted">Connecting...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Center Content -->
+    <div class="karaoke-main">
+        <!-- Top Control Bar with Now Playing -->
+        <div class="karaoke-top-bar">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="song-info-wrapper">
+                    <div class="now-playing-label">
+                        <i data-feather="music"></i>
+                        <span>NOW PLAYING</span>
+                    </div>
+                    <div class="song-details">
+                        <h3 class="song-title-main">{{ session.song.title }}</h3>
+                        <p class="song-artist-main">{{ session.song.artist }}</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-info" id="sessionStatus">{{ session.status }}</span>
+                    <button class="btn btn-sm btn-outline-primary" type="button" id="inviteBtn">
+                        <i data-feather="share-2"></i> Share
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden YouTube Player (audio only, not visible) -->
+        <div id="videoPlayer" style="display: none !important; visibility: hidden; position: absolute; width: 0; height: 0; overflow: hidden;">
+            <div id="player"></div>
+        </div>
+
+        <!-- Main Lyrics Display -->
+        <div id="lyricsDisplay" class="lyrics-main-container">
+            <div class="lyrics-container">
+                <div class="lyrics-overlay"></div>
+                <div class="lyrics-scroll">
+                    <div class="lyrics-loading text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading lyrics...</span>
+                        </div>
+                        <p class="mt-3">Loading lyrics...</p>
+                    </div>
+                </div>
+                <div class="lyrics-overlay-bottom"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Control Bar -->
+        <div class="karaoke-bottom-bar">
+            <!-- Left button: Alert -->
+            <button class="control-btn control-btn-left" id="alertBtn" title="Alerts">
+                <i data-feather="alert-triangle"></i>
+            </button>
+
+            <!-- Center 3 buttons -->
+            <div class="center-controls">
+                <button class="control-btn control-btn-secondary" id="deafenBtn" title="Deafen (Mute Mic & Audio)">
+                    <i data-feather="volume-x"></i>
+                </button>
+                <button class="control-btn control-btn-secondary" id="micBtn" title="Mute Microphone">
+                    <i data-feather="mic"></i>
+                </button>
+                <button class="control-btn control-btn-primary" id="playBtn" title="Play/Pause">
+                    <i data-feather="play"></i>
+                </button>
+            </div>
+
+            <!-- Right button: Sign Out / Leave -->
+            <button class="control-btn control-btn-right" id="leaveBtn" title="Leave Session">
+                <i data-feather="log-out"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="karaoke-sidebar karaoke-sidebar-right">
+        <div class="sidebar-content">
+            <div class="sidebar-header mt-3">
+                <i data-feather="activity"></i>
+                <h6>Performance</h6>
+            </div>
+
+            <div class="stats-display">
+                <div class="stat-item">
+                    <div class="stat-label">Duration</div>
+                    <div class="stat-value" id="songDuration">0:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Mic Time</div>
+                    <div class="stat-value" id="micTime">0s</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Connection</div>
+                    <div class="stat-value">
+                        <span class="badge bg-success" id="connectionStatus">Connected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block modals %}
+<!-- Score Submission Modal -->
+<div
+    class="modal fade"
+    id="scoreModal"
+    tabindex="-1"
+    aria-labelledby="scoreModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scoreModalLabel">Submit Your Score</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <p>How did your performance go? Enter your score to see it on the leaderboard.</p>
+                <div class="alert alert-light border small mb-3">
+                    Mic time: <span id="scoreMicTime">0s</span>
+                </div>
+                <div class="mb-3">
+                    <label for="scoreInput" class="form-label">Overall Score (0-100)</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="scoreInput"
+                        min="0"
+                        max="100"
+                        value="80"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label for="accuracyInput" class="form-label">Pitch Accuracy (%)</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="accuracyInput"
+                        min="0"
+                        max="100"
+                        value="85"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label for="timingInput" class="form-label">Rhythm & Timing (%)</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="timingInput"
+                        min="0"
+                        max="100"
+                        value="90"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label for="notesInput" class="form-label">Notes (Optional)</label>
+                    <textarea
+                        class="form-control"
+                        id="notesInput"
+                        rows="2"
+                        placeholder="e.g., A bit pitchy in the chorus"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="skipScoreBtn">Skip</button>
+                <button type="button" class="btn btn-primary" id="submitScoreBtn">Submit Score</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Session Modal -->
+<div
+    class="modal fade"
+    id="leaveModal"
+    tabindex="-1"
+    aria-labelledby="leaveModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="leaveModalLabel">Leave Session?</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to leave this karaoke session?
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="confirmLeaveBtn"
+                >
+                    Leave Session
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Error Modal -->
+<div
+    class="modal fade"
+    id="errorModal"
+    tabindex="-1"
+    aria-labelledby="errorModalLabel"
+    aria-hidden="true"
+    data-bs-backdrop="static"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="errorModalLabel">
+                    <i data-feather="alert-circle"></i> Connection Error
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <p id="errorModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Close
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="retryConnectionBtn"
+                >
+                    Retry
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report User Modal -->
+<div
+    class="modal fade"
+    id="reportModal"
+    tabindex="-1"
+    aria-labelledby="reportModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="reportModalLabel">
+                    <i data-feather="alert-triangle"></i> Report Issue
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <div class="modal-body">
+                <p>This will disconnect you from the current session.</p>
+                <p class="text-muted small">Report functionality will be available soon. For now, this will disconnect the current connection.</p>
+            </div>
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="confirmReportBtn"
+                >
+                    Disconnect
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    const SESSION_ID = "{{ session.session_id }}";
+    const SESSION_SONG_ID = {{ session.song.id }};
+    const SONG_TITLE = "{{ session.song.title }}";
+    const YOUTUBE_URL = "{{ session.song.youtube_url }}";
+    const CURRENT_USERNAME = "{{ g.current_user.username if g.current_user else '' }}";
+    const DISPLAY_NAME = "{{ (g.current_user.display_name or g.current_user.username) if g.current_user else '' }}";
+</script>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='karaoke/lyrics.css') }}"
+/>
+<script src="{{ url_for('static', filename='karaoke/lyrics.js') }}"></script>
+<script src="{{ url_for('static', filename='karaoke/queue.js') }}"></script>
+<script src="{{ url_for('static', filename='karaoke/join.js') }}"></script>
+<style>
+/* 3-Column Karaoke Layout */
+.karaoke-container {
+    display: flex;
+    height: calc(100vh - 2rem);
+    overflow: hidden;
+    background: linear-gradient(to right, #F06B42, #fbc851);
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Sidebars */
+.karaoke-sidebar {
+    width: 22vw;
+    background: #f2f2f5;
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+}
+
+.karaoke-sidebar-left {
+    border-right: none;
+}
+
+.karaoke-sidebar-right {
+    border-left: none;
+}
+
+.sidebar-content {
+    padding: 1.5rem;
+    background-color: #f2f2f5;
+    border-radius: 16px;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.sidebar-header h6 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.sidebar-header i {
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: #e9ecef;
+    margin: 1.5rem 0;
+}
+
+/* Queue and Participants Lists */
+.queue-list, .participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.queue-item, .participant-item {
+    padding: 0.75rem;
+    background: white;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.queue-item:hover, .participant-item:hover {
+    background: #e9ecef;
+    transform: translateX(2px);
+}
+
+/* Main Center Area */
+.karaoke-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f2f2f5;
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Top Control Bar */
+.karaoke-top-bar {
+    background: #f2f2f5;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+    border-bottom: 2px solid rgba(240, 107, 66, 0.2);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+}
+
+.song-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.now-playing-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.now-playing-label i {
+    width: 16px;
+    height: 16px;
+    stroke: var(--primary-color);
+    animation: pulse 2s infinite;
+}
+
+.song-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.song-title-main {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.song-artist-main {
+    color: #7f8c8d;
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Legacy styles for compatibility */
+.song-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.song-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.song-artist {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+}
+
+.song-artist::before {
+    content: "•";
+    margin: 0 0.5rem;
+}
+
+/* Main Lyrics Display */
+.lyrics-main-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+}
+
+.lyrics-main-container .lyrics-container {
+    width: 100%;
+    max-width: 900px;
+    min-height: 500px;
+    max-height: 70vh;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Bottom Control Bar */
+.karaoke-bottom-bar {
+    background: #2e2e2e;
+    padding: 1rem 2rem;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.control-btn i {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+}
+
+.control-btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.control-btn-primary:hover {
+    background: #e05a3a;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(240, 107, 66, 0.4);
+}
+
+.control-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.control-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.control-btn-secondary i {
+    stroke: white;
+}
+
+.control-btn-left {
+    background: rgba(255, 193, 7, 0.2);
+}
+
+.control-btn-left:hover {
+    background: rgba(255, 193, 7, 0.3);
+}
+
+.control-btn-right {
+    background: rgba(220, 53, 69, 0.2);
+}
+
+.control-btn-right:hover {
+    background: rgba(220, 53, 69, 0.3);
+}
+
+.control-btn.muted {
+    background: #dc3545 !important;
+}
+
+.control-btn.muted:hover {
+    background: #c82333 !important;
+    transform: scale(1.1);
+}
+
+.control-btn.muted i {
+    stroke: white;
+}
+
+.control-btn.active {
+    background: rgba(34, 197, 94, 0.4);
+}
+
+.center-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Control Options in Right Sidebar */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.control-option:hover {
+    background: #e9ecef;
+    transform: translateX(2px);
+}
+
+.control-option i {
+    width: 18px;
+    height: 18px;
+    color: var(--primary-color);
+}
+
+.control-option span {
+    flex: 1;
+}
+
+.toggle-indicator {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: #d4edda;
+    color: #155724;
+    font-weight: 600;
+}
+
+.toggle-indicator.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+/* Stats Display */
+.stats-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Tips Container */
+.tips-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tip-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(240, 107, 66, 0.05), rgba(251, 200, 81, 0.05));
+    border-radius: 12px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.tip-item i {
+    width: 18px;
+    height: 18px;
+    color: var(--primary-color);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.tip-item p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #495057;
+    line-height: 1.5;
+}
+
+/* Enhanced Lyrics Container for Center Display */
+.lyrics-main-container .lyrics-scroll {
+    height: 100%;
+    max-height: 70vh;
+    padding: 4rem 2rem;
+}
+
+.lyrics-main-container .lyric-line {
+    font-size: 1.5rem;
+    line-height: 3rem;
+    padding: 1rem;
+}
+
+.lyrics-main-container .lyric-line.active {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .karaoke-sidebar {
+        width: 240px;
+    }
+}
+
+@media (max-width: 992px) {
+    .karaoke-sidebar-left {
+        position: fixed;
+        left: -280px;
+        height: 100vh;
+        z-index: 1000;
+    }
+
+    .karaoke-sidebar-left.active {
+        left: 0;
+    }
+
+    .lyrics-main-container .lyric-line {
+        font-size: 1.2rem;
+    }
+
+    .lyrics-main-container .lyric-line.active {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .karaoke-sidebar-right {
+        display: none;
+    }
+
+    .control-btn span {
+        display: none;
+    }
+
+    .control-btn {
+        padding: 0.75rem;
+    }
+}
+</style>
+<script>
+        feather.replace();
+</script>
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"
+></script>
+{% endblock %}

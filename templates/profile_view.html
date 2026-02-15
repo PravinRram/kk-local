@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='auth/css/style.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <section class="card insta-profile">
+    <div class="insta-header">
+      <div class="insta-avatar-wrap">
+        <img
+          class="insta-avatar"
+          src="{{ avatar_url(user.profile_picture_url) }}"
+          alt="Profile picture"
+        />
+      </div>
+      <div class="insta-details">
+        <div class="insta-top-row">
+          <div>
+            <h2 class="insta-username">@{{ user.username }}</h2>
+            <p class="insta-name">{{ user.display_name or user.username }}</p>
+          </div>
+          <div class="insta-actions">
+            <a class="button primary" href="{{ url_for('auth.profile_edit') }}">Edit Profile</a>
+            <a class="button outline" href="{{ url_for('auth.logout') }}">Logout</a>
+          </div>
+        </div>
+        <div class="insta-meta">
+          {% if user.location %}
+            <span>{{ user.location }}</span>
+          {% endif %}
+          {% if user.gender %}
+            <span>{{ user.gender|title }}</span>
+          {% endif %}
+          {% if user.age_group %}
+            <span>{{ user.age_group|title }}</span>
+          {% endif %}
+        </div>
+        <div class="insta-stats">
+          <div>
+            <strong>0</strong>
+            <span>Posts</span>
+          </div>
+          <a href="{{ url_for('auth.followers_list', username=user.username) }}">
+            <strong>{{ followers_count }}</strong>
+            <span>Followers</span>
+          </a>
+          <a href="{{ url_for('auth.following_list', username=user.username) }}">
+            <strong>{{ following_count }}</strong>
+            <span>Following</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="insta-divider"></div>
+
+    <div class="insta-bio">
+      <h3>Bio/About Me</h3>
+      <p>{{ user.bio or "No bio added yet." }}</p>
+    </div>
+
+    <div class="insta-interests">
+      <h3>Interests</h3>
+      <div class="tag-grid">
+        {% for hobby in user.hobbies %}
+          <span class="tag pill">{{ hobby.name }}</span>
+        {% else %}
+          <p class="muted">No interests shared yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="insta-interests">
+      <h3>Posts</h3>
+      <p class="muted">Posts will appear here soon.</p>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,201 @@
+:root {
+    --kk-primary: #F06B42;
+    --kk-nav-bg: #ffffff;
+    --kk-nav-height: 70px;
+    --kk-indicator-size: 70px;
+    --kk-indicator-border: 6px;
+    --kk-anim-speed: 0.5s;
+    --kk-anim-curve: cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    max-width: 100%;
+    box-sizing: border-box;
+    height: var(--kk-nav-height);
+    background: transparent; /* Changed from white to transparent */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* box-shadow moved to bg element */
+    z-index: 1050;
+    padding: 0 10px;
+    pointer-events: none; /* Let clicks pass through empty areas if needed, but children have pointer-events: auto */
+    transition: transform 0.4s cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+.mobile-bottom-nav.nav-hidden {
+    transform: translateY(150%);
+}
+
+.mobile-bottom-nav-shadow-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    filter: drop-shadow(0 -5px 10px rgba(0,0,0,0.30)); /* Shadow respects the mask hole */
+    pointer-events: none;
+}
+
+.mobile-bottom-nav-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at var(--indicator-x, 50%) 0, rgba(0,0,0,0.15) 15px, transparent 45px), var(--kk-nav-bg);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    /* box-shadow removed, using filter on wrapper instead */
+    z-index: 0;
+    /* Create the hole for the indicator */
+    -webkit-mask: radial-gradient(circle at var(--indicator-x, 50%) 0, transparent 35px, black 35.5px);
+    mask: radial-gradient(circle at var(--indicator-x, 50%) 0, transparent 35px, black 35.5px);
+    transition: -webkit-mask-position var(--kk-anim-speed) var(--kk-anim-curve); /* Optional if mask supports transition, usually needs JS update */
+    pointer-events: auto; /* Catch clicks on the bar */
+}
+
+.mobile-bottom-nav ul {
+    display: flex;
+    width: 100%;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1; /* Above bg */
+    pointer-events: auto;
+}
+
+.mobile-bottom-nav ul li {
+    position: relative;
+    width: 20%;
+    height: var(--kk-nav-height);
+    z-index: 2; /* Ensure icons are above the indicator */
+}
+
+.mobile-bottom-nav ul li a {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    font-weight: 500;
+    text-decoration: none;
+    color: #333;
+}
+
+.mobile-bottom-nav ul li a .icon {
+    position: relative;
+    display: block;
+    line-height: 75px;
+    font-size: 1.5rem;
+    text-align: center;
+    transition: var(--kk-anim-speed) var(--kk-anim-curve);
+    color: #333;
+}
+
+.mobile-bottom-nav ul li.active a .icon {
+    transform: translateY(-35px); /* Move icon up into the bubble */
+    color: #fff;
+}
+
+/* Hover effect for inactive items (Desktop/Touch feedback) */
+.mobile-bottom-nav ul li:not(.active) a:hover .icon {
+    transform: scale(1.2) rotate(5deg);
+    color: var(--kk-primary);
+}
+
+.mobile-bottom-nav ul li a .text {
+    position: absolute;
+    color: #333;
+    font-weight: 400;
+    font-size: 0.75em;
+    letter-spacing: 0.05em;
+    transition: var(--kk-anim-speed) var(--kk-anim-curve);
+    opacity: 0;
+    transform: translateY(20px);
+    bottom: 12px;
+}
+
+.mobile-bottom-nav ul li.active a .text {
+    opacity: 1;
+    transform: translateY(0);
+    color: var(--kk-primary);
+    font-weight: 600;
+}
+
+/* The Liquid Indicator */
+.indicator {
+    position: absolute;
+    top: -50%; /* Moves 50% of its own height up */
+    width: var(--kk-indicator-size);
+    height: var(--kk-indicator-size);
+    background: var(--kk-primary);
+    border-radius: 50%;
+    border: var(--kk-indicator-border) solid transparent;
+    background-clip: padding-box;
+    transition: var(--kk-anim-speed) var(--kk-anim-curve);
+    z-index: 1;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* The Curves (Inverted Border Radius) */
+
+
+.indicator::before {
+    left: -22px; /* width 20px + border overlap adjustment */
+    border-top-right-radius: 20px;
+    box-shadow: 1px -10px 0 0 var(--kk-nav-bg); /* Adjusted shadow for smooth curve */
+}
+
+.indicator::after {
+    right: -22px;
+    border-top-left-radius: 20px;
+    box-shadow: -1px -10px 0 0 var(--kk-nav-bg); /* Adjusted shadow for smooth curve */
+}
+
+/* Hide on Desktop */
+@media (min-width: 768px) {
+    .mobile-bottom-nav {
+        display: none;
+    }
+}
+
+/* Ensure content is not hidden behind the fixed nav on mobile */
+@media (max-width: 767.98px) {
+    body {
+        padding-bottom: 80px !important;
+    }
+}
+
+
+/* Utility to disable transitions during page load */
+.mobile-bottom-nav.no-transition * {
+    transition: none !important;
+}
+
+@keyframes splashIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.splash-in {
+    animation: splashIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}

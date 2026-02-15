@@ -1,0 +1,310 @@
+<form method="POST" action="{{ url_for('forum.create_forum') }}">
+    <div class="modal fade" id="createForumModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="material-symbols-outlined">add_circle</span> Create a New Forum
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <span class="material-symbols-outlined">info</span>
+                        <strong>Requirements:</strong> Your account must be at least 7 days old, and you can create a maximum of 5 forums.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="forum_name" class="form-label">Forum Name *</label>
+                        <input type="text" class="form-control" id="forum_name" name="name" 
+                               minlength="3" maxlength="100" required>
+                        <div class="form-text">3-100 characters, must be unique</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="forum_description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="forum_description" name="description" 
+                                  rows="4" minlength="10" required></textarea>
+                        <div class="form-text">At least 10 characters. Describe what your forum is about.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="forum_rules" class="form-label">Forum Rules</label>
+                        <textarea class="form-control" id="forum_rules" name="rules" 
+                                  rows="5">1. Be respectful & civil
+2. Keep posts on topic
+3. No spam / self-promotion</textarea>
+                        <div class="form-text">Set guidelines for your community</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="forum_banner" class="form-label">Forum Banner (Optional)</label>
+                        <input type="file" class="filepond-forum-banner" name="forum_banner_upload" />
+                        <input type="hidden" id="forum_banner" name="banner">
+                        <div class="form-text">Upload a banner image (recommended: 1200x300px)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Interest Tags * (Select up to 7)</label>
+                        <div class="form-text mb-2">Select interests related to your forum to help users discover it</div>
+                        <div class="row">
+                            {% for interest in interests_list %}
+                            <div class="col-md-4 col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input interest-tag-checkbox" type="checkbox" name="interest_tags" 
+                                           value="{{ interest }}" id="modal_tag{{ loop.index }}">
+                                    <label class="form-check-label" for="modal_tag{{ loop.index }}">
+                                        {{ interest }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div id="interest_tag_error" class="text-danger small mt-2" style="display: none;">
+                            You can select up to 7 interest tags only.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="modal_is_private" name="is_private">
+                            <label class="form-check-label" for="modal_is_private">
+                                <strong>Make this forum private</strong>
+                                <div class="form-text">Private forums require invitations to join and won't appear in public searches</div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="moderator_search" class="form-label">Invite Moderators (Optional)</label>
+                        <div class="search-input-wrapper" onclick="document.getElementById('moderator_search').focus()">
+                            <span class="material-symbols-outlined search-icon">search</span>
+                            <input type="text" id="moderator_search" class="form-control search-input-with-icon" 
+                                placeholder="Search people you follow...">
+                            <button class="search-clear-btn" id="clearModeratorSearchBtn" onclick="clearModeratorSearch(event)" style="display: none;">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div id="moderator_search_results" class="search-results-box mt-2"></div>
+                        <div class="form-text mb-2">You can only invite people you follow</div>
+                        <div id="selected_moderators" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        <input type="hidden" id="moderator_ids" name="moderator_ids">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined">add_circle</span> Create Forum
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<style>
+#moderator_search_results.search-results-box {
+    border: 3px solid var(--text-color);
+    border-radius: 15px;
+    background-color: var(--bg-color);
+    max-height: 300px;
+    overflow-y: auto;
+    transition: border-color 0.3s;
+}
+
+#moderator_search_results.search-results-box.active {
+    display: block;
+    border-color: var(--primary-color);
+}
+
+#moderator_search_results .search-result-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#moderator_search_results .search-result-item:hover {
+    background-color: var(--hover-on-bg-color);
+}
+
+.moderator-avatar {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.moderator-avatar img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+}
+
+.moderator-avatar .remove-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid white;
+}
+
+.moderator-avatar:hover .remove-btn {
+    display: flex;
+}
+</style>
+
+<script>
+// Interest tag limit
+document.querySelectorAll('.interest-tag-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const checked = document.querySelectorAll('.interest-tag-checkbox:checked').length;
+        const error = document.getElementById('interest_tag_error');
+        
+        if (checked > 7) {
+            this.checked = false;
+            error.style.display = 'block';
+        } else {
+            error.style.display = 'none';
+        }
+    });
+});
+
+// Moderator search and selection
+let selectedModerators = [];
+let searchTimeout;
+
+const moderatorSearch = document.getElementById('moderator_search');
+const searchResults = document.getElementById('moderator_search_results');
+const selectedContainer = document.getElementById('selected_moderators');
+const moderatorIdsInput = document.getElementById('moderator_ids');
+const clearModeratorBtn = document.getElementById('clearModeratorSearchBtn');
+
+if (moderatorSearch) {
+    moderatorSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        // Show/hide clear button
+        if (this.value.length > 0) {
+            clearModeratorBtn.style.display = 'flex';
+        } else {
+            clearModeratorBtn.style.display = 'none';
+        }
+        
+        if (query.length < 1) {
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/search-following?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayModeratorResults(data);
+                });
+        }, 300);
+    });
+    
+    // Show results when focusing if there's text
+    moderatorSearch.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            searchResults.classList.add('active');
+        }
+    });
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('#moderator_search') && !event.target.closest('#moderator_search_results')) {
+            searchResults.classList.remove('active');
+        }
+    });
+}
+
+function clearModeratorSearch(event) {
+    event.stopPropagation();
+    moderatorSearch.value = '';
+    searchResults.innerHTML = '';
+    searchResults.classList.remove('active');
+    clearModeratorBtn.style.display = 'none';
+    moderatorSearch.focus();
+}
+
+function displayModeratorResults(users) {
+    if (users.length === 0) {
+        searchResults.innerHTML = '<p class="text-muted small px-3 py-2">No results found</p>';
+        searchResults.classList.add('active');
+        return;
+    }
+    
+    let html = '';
+    users.forEach(user => {
+        // Don't show already selected moderators
+        if (selectedModerators.find(m => m.id === user.id)) {
+            return;
+        }
+        
+        html += `
+            <div class="search-result-item d-flex align-items-center" onclick="addModerator(${user.id}, '${user.username}', '${user.profile_picture}', ${user.age})">
+                <img src="${user.profile_picture}" class="rounded-circle me-2" 
+                     style="width: 40px; height: 40px; object-fit: cover;">
+                <div>
+                    <strong>${user.username}</strong>
+                    <span class="age-badge ms-1">${user.age} years</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    searchResults.innerHTML = html;
+    searchResults.classList.add('active');
+}
+
+function addModerator(id, username, profilePicture, age) {
+    // Check if already added
+    if (selectedModerators.find(m => m.id === id)) {
+        return;
+    }
+    
+    selectedModerators.push({ id, username, profilePicture, age });
+    updateModeratorDisplay();
+    
+    // Clear search
+    moderatorSearch.value = '';
+    searchResults.innerHTML = '';
+    searchResults.classList.remove('active');
+    clearModeratorBtn.style.display = 'none';
+}
+
+function removeModerator(id) {
+    selectedModerators = selectedModerators.filter(m => m.id !== id);
+    updateModeratorDisplay();
+}
+
+function updateModeratorDisplay() {
+    let html = '';
+    selectedModerators.forEach(mod => {
+        html += `
+            <div class="moderator-avatar" title="${mod.username}">
+                <img src="${mod.profilePicture}" alt="${mod.username}">
+                <div class="remove-btn" onclick="removeModerator(${mod.id})">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    selectedContainer.innerHTML = html;
+    moderatorIdsInput.value = selectedModerators.map(m => m.id).join(',');
+}
+</script>

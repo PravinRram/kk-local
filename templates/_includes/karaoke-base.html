@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    >
+    <meta name="csrf-token" content="{{ session.csrf_token }}">
+
+    {% block styles %} {{ bootstrap.load_css() }}
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/karaoke-styles.css') }}"
+    >
+    <style>
+      .auto-hide-navbar {
+        overflow: visible;
+      }
+
+      .auto-hide-navbar .container-fluid,
+      .auto-hide-navbar .navbar-collapse {
+        overflow: visible;
+      }
+
+      .auto-hide-navbar .dropdown-menu {
+        z-index: 1060;
+        max-width: min(320px, 90vw);
+        white-space: normal;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    >
+    {% endblock %}
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <title>{% block title %}{% endblock %} | Kampong Konek</title>
+  </head>
+
+  <body>
+    <!-- Auto-hiding navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light auto-hide-navbar">
+      <div class="container-fluid">
+        <a
+          class="navbar-brand d-flex align-items-center"
+          href="{{ url_for('auth.index') }}"
+        >
+          <img
+            src="{{ url_for('static', filename='kklogo.png') }}"
+            alt="Kampong Konek"
+            height="30"
+            class="me-2"
+          >
+          Kampong Konek
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('karaoke') }}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('leaderboard_show') }}"
+              >Leaderboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('karaoke_create') }}"
+              >Create Session</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('songs_manage') }}"
+              >Manage Songs</a>
+            </li>
+          </ul>
+          <ul class="navbar-nav">
+            {% if g.user %}
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                {{ g.user.display_name }}
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('profile_view') }}"
+                  >Profile</a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('scores_my_scores') }}"
+                  >My Scores</a>
+                </li>
+                <li>
+                  <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" href="#">Logout</a></li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <span class="nav-link">Guest</span>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div id="page">
+      {% block page_layout %}
+      <!-- Default simple layout for pages without sidebars -->
+      <main class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div
+          class="alert alert-{{ category }} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          >
+          </button>
+        </div>
+        {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+      </main>
+      {% endblock %}
+    </div>
+
+    {% block bottom_bar_container %}
+    <!-- Bottom bar only shows for pages that define it -->
+    {% endblock %} {% block modals %}{% endblock %} {% block scripts %} {{
+    bootstrap.load_js() }}
+    <script
+      src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"
+    ></script>
+    <script>
+      // Global helper function to safely replace feather icons
+      window.replaceFeatherIcons = function(container) {
+        if (typeof feather !== 'undefined') {
+          if (container) {
+            feather.replace({ 'data-feather': container });
+          } else {
+            feather.replace();
+          }
+        } else {
+          console.warn('Feather icons library not loaded yet');
+        }
+      };
+
+      // Initialize feather icons when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          replaceFeatherIcons();
+        });
+      } else {
+        replaceFeatherIcons();
+      }
+
+      // Auto-hiding navbar functionality
+      let lastScrollTop = 0;
+      const navbar = document.querySelector(".auto-hide-navbar");
+      let mouseInTopArea = false;
+
+      // Mouse position tracking
+      document.addEventListener("mousemove", function (e) {
+        if (e.clientY <= 10) {
+          mouseInTopArea = true;
+          navbar.classList.add("show");
+        } else if (e.clientY > 60) {
+          mouseInTopArea = false;
+          navbar.classList.remove("show");
+        }
+      });
+
+      // Scroll tracking
+      window.addEventListener("scroll", function () {
+        if (!mouseInTopArea) {
+          navbar.classList.remove("show");
+        }
+      }, false);
+    </script>
+    {% endblock %}
+  </body>
+</html>

@@ -1,0 +1,308 @@
+/* KampongKonek Karaoke Lyrics Display Stylesheet */
+
+.lyrics-container {
+  position: relative;
+  min-height: 300px;
+  max-height: 400px;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(240, 107, 66, 0.05) 0%,
+    rgba(251, 200, 81, 0.05) 100%
+  );
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.lyrics-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 3rem 1.5rem;
+  scroll-behavior: smooth;
+}
+
+.lyrics-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.lyrics-overlay-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.lyric-line {
+  text-align: center;
+  font-size: 1.2rem;
+  line-height: 2.5rem;
+  padding: 0.75rem;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: #888;
+  font-weight: 400;
+  margin: 0.5rem 0;
+  border-radius: 10px;
+  opacity: 0.7;
+  transform: scale(0.95);
+}
+
+.lyric-line.active {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  transform: scale(1.05);
+  background-color: rgba(240, 107, 66, 0.1);
+  box-shadow: 0 3px 10px rgba(240, 107, 66, 0.1);
+  opacity: 1;
+}
+
+.lyric-line.active::before {
+  content: "🎵";
+  margin-right: 10px;
+  animation: bounce 1s infinite alternate;
+}
+
+.lyric-line.upcoming {
+  color: #444;
+  opacity: 0.9;
+}
+
+.lyric-line.past {
+  color: #bbb;
+  font-size: 1rem;
+  opacity: 0.6;
+}
+
+.lyric-line.next {
+  color: #666;
+  opacity: 0.8;
+}
+
+/* Karaoke Progress Bar */
+.karaoke-progress {
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.karaoke-progress-bar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  transition: width 0.3s ease-in-out;
+  border-radius: 3px;
+}
+
+/* Animations */
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+
+.lyric-line.active {
+  animation: pulse 1.5s infinite;
+}
+
+/* Controls Bar */
+.lyrics-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.lyrics-controls button {
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.lyrics-controls button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.lyrics-controls button.primary {
+  background-color: var(--primary-color);
+  color: white;
+  width: 54px;
+  height: 54px;
+}
+
+.lyrics-controls .control-label {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  color: #777;
+}
+
+/* Loading State */
+.lyrics-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+  gap: 1rem;
+}
+
+.lyrics-loading .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: var(--primary-color);
+}
+
+.lyrics-loading p {
+  font-style: italic;
+  color: #777;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lyrics-container {
+    min-height: 250px;
+  }
+
+  .lyric-line {
+    font-size: 1.1rem;
+    line-height: 2rem;
+    padding: 0.5rem;
+  }
+
+  .lyric-line.active {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .lyrics-container {
+    min-height: 200px;
+  }
+
+  .lyric-line {
+    font-size: 1rem;
+    line-height: 1.8rem;
+    padding: 0.4rem;
+  }
+
+  .lyric-line.active {
+    font-size: 1.2rem;
+  }
+}
+
+/* Karaoke timing helpers */
+.lyric-word {
+  display: inline-block;
+  padding: 0 2px;
+}
+
+.lyric-word.highlighted {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* Accessibility */
+.lyrics-container:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Lyrics printout mode */
+@media print {
+  .lyrics-container {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    background: none;
+  }
+
+  .lyrics-scroll {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .lyrics-overlay,
+  .lyrics-overlay-bottom,
+  .lyrics-controls {
+    display: none;
+  }
+
+  .lyric-line {
+    opacity: 1;
+    transform: none;
+    color: black;
+    animation: none;
+    box-shadow: none;
+    background: none;
+    font-size: 0.9rem;
+    line-height: 1.5rem;
+    padding: 0.2rem;
+    margin: 0.2rem 0;
+  }
+
+  .lyric-line.active {
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: none;
+    background: none;
+    animation: none;
+  }
+
+  .lyric-line.active::before {
+    content: "";
+    margin: 0;
+  }
+}

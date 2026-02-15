@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}{{ forum.name }} / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Forum Banner -->
+        {% if forum.banner %}
+        <img src="{{ forum.banner }}" class="forum-banner" alt="{{ forum.name }} banner">
+        {% else %}
+        <div class="forum-banner"></div>
+        {% endif %}
+
+        <!-- Forum Header -->
+        <div class="card forum-header-card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-stretch mb-3">
+                    <div class="forum-header-left">
+                        <h2 class="mb-1">
+                            {{ forum.name }}
+                            {% if forum.is_private %}
+                            <span class="badge bg-warning ms-2">
+                                <span class="material-symbols-outlined">lock</span> Private
+                            </span>
+                            {% endif %}
+                        </h2>
+                        <p class="text-muted mb-2">{{ forum.description }}</p>
+                        <div class="d-flex gap-3">
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                            </small>
+                            <small class="text-muted">
+                                <span class="material-symbols-outlined">calendar_today</span> {{ forum.created_at.strftime('%B %d, %Y') }}
+                            </small>
+                        </div>
+                        {% if forum.interest_tags %}
+                        <div class="mt-2">
+                            {% for tag in forum.interest_tags %}
+                            <span class="interest-tag me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="forum-header-right">
+                        <div class="forum-creator-info">
+                            <small class="text-muted">
+                                <img src="{{ forum.creator_profile_picture }}" 
+                                    class="user-avatar-small me-1" 
+                                    alt="{{ forum.creator_username }}">
+                                Created by 
+                                <a href="{{ url_for('auth.profile_public', username=forum.creator_username) }}">
+                                    {{ forum.creator_username }}
+                                </a>
+                            </small>
+                        </div>
+                            
+                        <div class="forum-button">
+                            {% if is_banned %}
+                            <div class="alert alert-danger mb-0">
+                                <span class="material-symbols-outlined">block</span> You are banned from this forum
+                            </div>
+                            {% elif is_member %}
+                            <form method="POST" action="{{ url_for('forum.leave_forum', forum_id=forum.id) }}">
+                                {{ csrf_token() }}
+                                <button type="submit" class="btn btn-danger">
+                                    <span class="material-symbols-outlined">logout</span>Leave
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('forum.join_forum', forum_id=forum.id) }}">
+                                {{ csrf_token() }}
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-symbols-outlined">add</span>Join
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if is_moderator %}
+                <div class="alert alert-info mb-0">
+                    <span class="material-symbols-outlined">shield</span> You are a moderator of this forum
+                </div>
+                {% endif %}
+
+                <!-- Join warning -->
+                {% if not is_member and not is_banned %}
+                <div class="alert alert-warning mb-0">
+                    <span class="material-symbols-outlined">warning</span>
+                    Join this forum to create posts and participate in discussions.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="forum-tabs mb-4">
+            <button class="forum-tab active" data-tab="posts">Posts</button>
+            <button class="forum-tab" data-tab="rules">Rules</button>
+            <button class="forum-tab" data-tab="mod-team">Mod Team</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content" id="posts-content">
+            {% if posts %}
+                {% for post in posts %}
+                    {% include "includes/_post_card.html" %}
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    <span class="material-symbols-outlined">info</span>
+                    No posts in this forum yet. Be the first to post!
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-content" id="rules-content" style="display: none;">
+            {% if forum.rules %}
+                <div class="card">
+                    <div class="card-body">
+                        <pre style="white-space: pre-wrap; font-family: inherit;">{{ forum.rules }}</pre>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <span class="material-symbols-outlined">info</span>
+                    No specific rules have been set for this forum.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-content" id="mod-team-content" style="display: none;">
+            <div class="row">
+                {% if forum.moderators %}
+                    {% for moderator in forum.moderators %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ moderator.profile_picture}}" 
+                                        class="rounded-circle me-3" 
+                                        style="width: 60px; height: 60px; object-fit: cover;" 
+                                        alt="{{ moderator.username }}">
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1">
+                                            <a href="{{ url_for('auth.profile_public', username=moderator.username) }}"
+                                            class="text-decoration-none">
+                                                {{ moderator.username }}
+                                            </a>
+                                        </h5>
+                                        {% if moderator.id == forum.creator_id %}
+                                        <span class="badge bg-primary">Creator</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Moderator</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <span class="material-symbols-outlined">info</span>
+                            No moderators assigned yet.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Character counter
+    const textarea = document.querySelector('textarea[name="content"]');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            document.getElementById('charCount').textContent = this.value.length;
+        });
+    }
+
+    // Tab switching functionality
+    document.querySelectorAll('.forum-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            document.querySelectorAll('.forum-tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show selected tab content
+            const tabName = this.getAttribute('data-tab');
+            document.getElementById(tabName + '-content').style.display = 'block';
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

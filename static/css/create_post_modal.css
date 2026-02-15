@@ -1,0 +1,212 @@
+/* Updated Post Modal Styles */
+
+/* Modal Header */
+#createPostModal .modal-header {
+    border-bottom: 1px solid var(--lighter-text-color);
+    padding: 1rem 1.5rem;
+    justify-content: space-between;
+}
+
+#createPostModal .new-post-modal-text-close {
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-content: center;
+}
+
+#createPostModal .btn-close {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+#createPostModal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Modal Body - Remove excess spacing */
+#createPostModal .modal-body {
+    padding: 1.5rem;
+}
+
+#createPostModal .form-label {
+    display: none;
+}
+
+/* Post textarea - Large, borderless style with user avatar */
+#createPostModal .post-content-wrapper {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+#createPostModal .user-avatar-post {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+#createPostModal #postContent {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    font-size: 1.1rem;
+    resize: none;
+    box-shadow: none !important;
+    outline: none !important;
+    background: transparent;
+}
+
+#createPostModal #postContent:focus {
+    border: none;
+    box-shadow: none !important;
+}
+
+#createPostModal #postContent::placeholder {
+    color: var(--lighter-text-color);
+    font-weight: 400;
+}
+
+/* Horizontal divider after content */
+#createPostModal .content-divider {
+    border: none;
+    border-top: 3px solid var(--text-color);
+    margin: 1.5rem 0;
+}
+
+/* Post Location Dropdown - Primary color outline */
+#createPostModal .location-section {
+    margin-bottom: 1.5rem;
+}
+
+#createPostModal .location-section .section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+#createPostModal .location-section .section-subtitle {
+    font-size: 0.85rem;
+    color: var(--lighter-text-color);
+    margin-bottom: 0.75rem;
+}
+
+#createPostModal #postLocation {
+    border: 2px solid var(--primary-color);
+    border-radius: 25px;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#createPostModal #postLocation option {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#createPostModal #postLocation:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(240, 107, 66, 0.25);
+    outline: none;
+}
+
+/* Hide the default form text */
+#createPostModal .form-text {
+    display: none;
+}
+
+/* Image Upload Section */
+#createPostModal .image-section {
+    margin-bottom: 1.5rem;
+}
+
+#createPostModal .image-section .section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+#createPostModal .image-section .section-subtitle {
+    font-size: 0.85rem;
+    color: var(--lighter-text-color);
+    margin-bottom: 0.75rem;
+}
+
+/* Hashtags Section */
+#createPostModal .hashtag-section {
+    margin-bottom: 1rem;
+}
+
+#createPostModal .hashtag-section .section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+#createPostModal .hashtag-section .section-subtitle {
+    font-size: 0.85rem;
+    color: var(--lighter-text-color);
+    margin-bottom: 0.75rem;
+}
+
+#createPostModal #postHashtags {
+    border: 1px solid var(--lighter-text-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+#createPostModal #postHashtags:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(240, 107, 66, 0.1);
+    outline: none;
+}
+
+#createPostModal #postHashtags::placeholder {
+    color: var(--lighter-text-color);
+}
+
+/* Character counter */
+#createPostModal .char-counter {
+    font-size: 0.85rem;
+    color: #999;
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+/* Modal Footer */
+#createPostModal .modal-footer {
+    border-top: 1px solid var(--lighter-text-color);
+    padding: 1rem 1.5rem;
+}
+
+/* Remove any margins from mb-3 classes inside modal */
+#createPostModal .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+/* High contrast mode adjustments */
+body.contrast-high #createPostModal #postLocation {
+    border-color: white;
+}
+
+body.contrast-high #createPostModal #postContent::placeholder {
+    color: #ccc;
+}

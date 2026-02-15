@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="card">
+    <h2>{{ user.display_name or user.username }} is following</h2>
+    <div class="list-grid">
+      {% for follow in following %}
+        <div class="list-card">
+          <div class="mutual-avatar">{{ follow.display_name[:1] if follow.display_name else follow.username[:1] }}</div>
+          <div>
+            <strong>{{ follow.display_name or follow.username }}</strong>
+            <p class="muted">@{{ follow.username }}</p>
+          </div>
+          <a class="button outline" href="{{ url_for('auth.profile_public', username=follow.username) }}">View</a>
+        </div>
+      {% else %}
+        <p class="muted">Not following anyone yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

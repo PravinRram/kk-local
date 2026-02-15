@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Home / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Posts -->
+        {% if posts %}
+            {% for post in posts %}
+                {% include "includes/_post_card.html" %}
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                No posts yet. Start following users or join forums to see posts in your feed!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

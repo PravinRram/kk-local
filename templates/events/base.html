@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>KampongKonek</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700;800&family=Sriracha&display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link
+            href="{{ url_for('static', filename='css/events.css') }}"
+            rel="stylesheet"
+        />
+        <link
+            href="{{ url_for('static', filename='css/mobile_nav.css') }}"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-light">
+        {% include 'includes/header.html' %}
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Desktop Sidebar -->
+                <div class="col-md-3 col-lg-3 d-none d-md-block p-0 border-end">
+                    {% include 'includes/sidebar.html' %}
+                </div>
+
+                <!-- Mobile Sidebar (Offcanvas) -->
+                <div
+                    class="offcanvas offcanvas-start"
+                    tabindex="-1"
+                    id="mobileSidebar"
+                    aria-labelledby="mobileSidebarLabel"
+                >
+                    <div class="offcanvas-header border-bottom">
+                        <h5
+                            class="offcanvas-title fw-bold"
+                            id="mobileSidebarLabel"
+                        >
+                            Menu
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="offcanvas"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="offcanvas-body p-0">
+                        {% include 'includes/sidebar.html' %}
+                    </div>
+                </div>
+
+                <main class="col-12 col-md-9 col-lg-9 p-3">
+                    {% block content %}{% endblock %}
+                </main>
+            </div>
+        </div>
+
+        <!-- Flash Messages Container (Floating Toast style) -->
+        <div
+            class="position-fixed top-0 end-0 p-3 w-100 w-md-auto"
+            style="z-index: 2000; max-width: 400px"
+        >
+            {% with messages = get_flashed_messages() %} {% if messages %} {%
+            for message in messages %}
+            <div
+                class="alert alert-success alert-dismissible fade show shadow-sm"
+                role="alert"
+            >
+                <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                ></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+        </div>
+
+        <!-- Share Modal -->
+        <div
+            class="modal fade"
+            id="shareModal"
+            tabindex="-1"
+            aria-labelledby="shareModalLabel"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="shareModalLabel">
+                            Share Event
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-2">
+                            Share this event with your friends!
+                        </p>
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="shareLinkInput"
+                                readonly
+                            />
+                            <button
+                                class="btn btn-primary"
+                                type="button"
+                                id="copyShareLinkBtn"
+                            >
+                                <i class="bi bi-clipboard me-1"></i> Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal 1 -->
+        <div
+            class="modal fade"
+            id="deleteModal1"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Event</h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this event?
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-danger"
+                            onclick="showDeleteModal2()"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal 2 -->
+        <div
+            class="modal fade"
+            id="deleteModal2"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i
+                            >Warning
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fw-bold">
+                            WARNING: This action cannot be undone.
+                        </p>
+                        <p>
+                            All event data including participant lists will be
+                            permanently deleted.
+                        </p>
+                        <p>Are you absolutely sure you want to proceed?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancel
+                        </button>
+                        <form id="deleteEventForm" method="POST" action="">
+                            <button
+                                type="submit"
+                                class="btn btn-danger fw-bold"
+                            >
+                                Yes, Delete Permanently
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Event Modal -->
+        <div
+            class="modal fade"
+            id="editEventModal"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">Wizard Settings</h5>
+                    </div>
+                    <div class="modal-body pt-2">
+                        <form
+                            id="editEventForm"
+                            method="POST"
+                            action=""
+                            enctype="multipart/form-data"
+                        >
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"
+                                    >Event name</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control bg-light border-0"
+                                    name="event_name"
+                                    id="editEventName"
+                                    required
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"
+                                    >Event Image</label
+                                >
+                                <div class="d-flex align-items-center gap-3">
+                                    <div
+                                        id="editImageStatus"
+                                        class="text-muted small fst-italic"
+                                    >
+                                        No new image selected
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-primary btn-sm"
+                                        onclick="openSharedImageSelectionModal()"
+                                    >
+                                        <i class="bi bi-cloud-upload me-1"></i
+                                        >Update Image
+                                    </button>
+                                </div>
+                                <input
+                                    type="hidden"
+                                    name="image_source"
+                                    id="editImageSource"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="ai_image_url"
+                                    id="editAiImageUrl"
+                                />
+                                <input
+                                    type="file"
+                                    name="event_image"
+                                    id="editFileInput"
+                                    class="d-none"
+                                    accept="image/*"
+                                    onchange="handleSharedFileSelect(this)"
+                                />
+                                {# Hidden field for description used by AI #}
+                                <input
+                                    type="hidden"
+                                    id="editEventDescription"
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold d-block"
+                                    >Type</label
+                                >
+                                <div class="btn-group" role="group">
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="event_type"
+                                        id="editTypeOnline"
+                                        value="online"
+                                        autocomplete="off"
+                                    />
+                                    <label
+                                        class="btn btn-outline-warning text-dark rounded-start-pill border-end-0"
+                                        for="editTypeOnline"
+                                        >Online</label
+                                    >
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="event_type"
+                                        id="editTypePhysical"
+                                        value="physical"
+                                        autocomplete="off"
+                                    />
+                                    <label
+                                        class="btn btn-outline-warning text-dark rounded-end-pill"
+                                        for="editTypePhysical"
+                                        >Physical</label
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold d-block"
+                                    >Visibility</label
+                                >
+                                <div class="btn-group" role="group">
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="visibility"
+                                        id="editVisPrivate"
+                                        value="private"
+                                        autocomplete="off"
+                                    />
+                                    <label
+                                        class="btn btn-outline-warning text-dark rounded-start-pill border-end-0"
+                                        for="editVisPrivate"
+                                        >Private (code/QR)</label
+                                    >
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="visibility"
+                                        id="editVisPublic"
+                                        value="public"
+                                        autocomplete="off"
+                                    />
+                                    <label
+                                        class="btn btn-outline-warning text-dark rounded-end-pill"
+                                        for="editVisPublic"
+                                        >Public (listed)</label
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"
+                                    >Features</label
+                                >
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="enable_group_chat"
+                                        id="editFeatChat"
+                                        value="1"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editFeatChat"
+                                        >Group chat room</label
+                                    >
+                                </div>
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="enable_minigames"
+                                        id="editFeatMinigames"
+                                        value="1"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="editFeatMinigames"
+                                        >Minigames & karaoke</label
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary bg-secondary-subtle text-dark border-0 fw-bold px-4"
+                                    data-bs-dismiss="modal"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="btn btn-warning text-white fw-bold px-4 flex-grow-1"
+                                    style="background-color: #f59e0b"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# --- SHARED IMAGE SELECTION MODAL --- #}
+        <div
+            class="modal fade"
+            id="sharedImageSelectionModal"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold">Event Image</h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-4 justify-content-center">
+                            <div class="col-md-6">
+                                <div
+                                    class="option-card"
+                                    onclick="triggerSharedUpload()"
+                                >
+                                    <div class="fs-1 mb-2">🖼️</div>
+                                    <div class="fw-bold">
+                                        Upload Image From your device
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div
+                                    class="option-card"
+                                    onclick="openSharedAIModal()"
+                                >
+                                    <div class="fs-1 mb-2">✨</div>
+                                    <div class="fw-bold">Smart Match Image</div>
+                                    <div class="small text-muted">
+                                        Auto-finds image based on description
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# --- SHARED AI SMART MATCH MODAL --- #}
+        <div
+            class="modal fade"
+            id="sharedAiModal"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold">Smart Match Image</h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="sharedLoadingSpinner" class="my-5">
+                            <div
+                                class="spinner-border text-primary"
+                                role="status"
+                            >
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">
+                                Finding the perfect match...
+                            </p>
+                        </div>
+
+                        <div id="sharedEmptyState" class="d-none my-5">
+                            <div class="display-1 mb-3">😕</div>
+                            <h5>No matching images found</h5>
+                            <p class="text-muted">
+                                Try updating your event description to be more
+                                specific.
+                            </p>
+                        </div>
+
+                        <div
+                            id="sharedErrorState"
+                            class="d-none my-5 text-danger"
+                        ></div>
+
+                        <img
+                            id="sharedFetchedImage"
+                            src=""
+                            class="img-fluid rounded shadow-sm d-none mb-3"
+                            style="max-height: 400px; object-fit: cover"
+                        />
+
+                        <div id="sharedResultControls" class="d-none">
+                            <p
+                                id="sharedQueryDisplay"
+                                class="text-muted small mb-3"
+                            ></p>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    onclick="nextSharedImage()"
+                                >
+                                    <i class="bi bi-arrow-clockwise me-1"></i
+                                    >Try Another
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    onclick="confirmSharedAIImage()"
+                                >
+                                    <i class="bi bi-check-lg me-1"></i>Use This
+                                    Image
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# --- JOIN EVENT MODAL --- #}
+        <div
+            class="modal fade"
+            id="joinEventModal"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">Join an Event</h5>
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    <div class="modal-body pt-3">
+                        <p class="text-muted mb-3">
+                            Enter the unique event code provided by the host.
+                        </p>
+                        <form
+                            action="{{ url_for('events.events_join_code') }}"
+                            method="POST"
+                        >
+                            <div class="mb-3">
+                                <label class="form-label fw-bold"
+                                    >Event Code</label
+                                >
+                                <input
+                                    type="text"
+                                    name="event_code"
+                                    class="form-control form-control-lg bg-light border-0"
+                                    placeholder="e.g. KK-12345"
+                                    required
+                                />
+                            </div>
+                            <div class="d-grid">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary fw-bold btn-lg"
+                                >
+                                    Join Event
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Navigation -->
+        <!--
+      To change the position of the buttons:
+      Simply rearrange the <li> elements inside the <ul> below.
+      The layout automatically adjusts to fit 4 items (25% width each).
+    -->
+        {% if request.endpoint != 'events.events_detail' %}
+        <nav class="mobile-bottom-nav no-transition">
+            <div class="mobile-bottom-nav-shadow-wrapper">
+                <div class="mobile-bottom-nav-bg"></div>
+            </div>
+            <ul>
+                <!-- 1. Home Button -->
+                <li
+                    class="{{ 'active' if request.endpoint == 'events.events' else '' }}"
+                >
+                    <a href="{{ url_for('events.events') }}">
+                        <span class="icon"
+                            ><i class="bi bi-house-door"></i
+                        ></span>
+                        <span class="text">Home</span>
+                    </a>
+                </li>
+                <!-- 2. Explore Button -->
+                <li
+                    class="{{ 'active' if request.endpoint == 'events.events_public_events' else '' }}"
+                >
+                    <a href="{{ url_for('events.events_public_events') }}">
+                        <span class="icon"><i class="bi bi-compass"></i></span>
+                        <span class="text">Explore</span>
+                    </a>
+                </li>
+                <!-- 3. Join Button (Middle) -->
+                <li
+                    class="{{ 'active' if request.endpoint == 'events.events_join_code' else '' }}"
+                >
+                    <a
+                        href="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#joinEventModal"
+                    >
+                        <span class="icon"
+                            ><i
+                                class="bi bi-plus-circle-fill"
+                                style="font-size: 1.8rem"
+                            ></i
+                        ></span>
+                        <span class="text">Join</span>
+                    </a>
+                </li>
+                <!-- 4. My Events Button -->
+                <li
+                    class="{{ 'active' if request.endpoint == 'events.events_your_events' else '' }}"
+                >
+                    <a href="{{ url_for('events.events_your_events') }}">
+                        <span class="icon"
+                            ><i class="bi bi-calendar-check"></i
+                        ></span>
+                        <span class="text">My Events</span>
+                    </a>
+                </li>
+                <!-- 5. Alerts Button -->
+                <li
+                    class="{{ 'active' if request.endpoint == 'events.event_notifications' else '' }}"
+                >
+                    <a href="{{ url_for('events.event_notifications') }}">
+                        <span class="icon"><i class="bi bi-bell"></i></span>
+                        <span class="text">Alerts</span>
+                    </a>
+                </li>
+                <div class="indicator"></div>
+            </ul>
+        </nav>
+        {% endif %}
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const nav = document.querySelector(".mobile-bottom-nav");
+                const list = nav.querySelector("ul");
+                const items = list.querySelectorAll("li");
+                const indicator = list.querySelector(".indicator");
+
+                // Store the initial active item (representing the current page)
+                // If no item is active (e.g. on a detail page), default to the first one for the "resting" position
+                let pageActiveItem = list.querySelector(".active") || items[0];
+
+                function positionIndicator(item) {
+                    if (!item) return;
+                    // Calculate center position
+                    const itemRect = item.getBoundingClientRect();
+                    const listRect = list.getBoundingClientRect();
+                    const left =
+                        itemRect.left -
+                        listRect.left +
+                        itemRect.width / 2 -
+                        indicator.offsetWidth / 2;
+                    indicator.style.transform = `translateX(${left}px)`;
+
+                    // Calculate absolute center X for the mask
+                    const centerX =
+                        itemRect.left - listRect.left + itemRect.width / 2 + 10;
+                    nav.style.setProperty("--indicator-x", `${centerX}px`);
+                }
+
+                // Initialize position
+                if (pageActiveItem) {
+                    positionIndicator(pageActiveItem);
+                }
+
+                // Enable animations after initial position is set (prevents "slide in" on load)
+                setTimeout(() => {
+                    nav.classList.remove("no-transition");
+                }, 100);
+
+                // Add click handlers for immediate feedback
+                items.forEach((item) => {
+                    item.addEventListener("click", function () {
+                        items.forEach((i) => i.classList.remove("active"));
+                        this.classList.add("active");
+                        positionIndicator(this);
+                    });
+                });
+
+                // Handle window resize
+                window.addEventListener("resize", () => {
+                    const active =
+                        list.querySelector(".active") || pageActiveItem;
+                    if (active) positionIndicator(active);
+                });
+
+                // Revert to original active item when Join Modal is closed
+                const joinModal = document.getElementById("joinEventModal");
+                if (joinModal) {
+                    joinModal.addEventListener("hidden.bs.modal", function () {
+                        if (pageActiveItem) {
+                            items.forEach((i) => i.classList.remove("active"));
+                            pageActiveItem.classList.add("active");
+                            positionIndicator(pageActiveItem);
+                        }
+                    });
+                }
+
+                // Hide/Show Nav on Side Menu Toggle
+                const sideMenu = document.getElementById("mobileSidebar");
+                if (sideMenu) {
+                    sideMenu.addEventListener("show.bs.offcanvas", () => {
+                        nav.classList.add("nav-hidden");
+                    });
+                    sideMenu.addEventListener("hide.bs.offcanvas", () => {
+                        nav.classList.remove("nav-hidden");
+                    });
+                }
+            });
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Share Modal Logic
+            function openShareModal(url) {
+                // If url is relative, make it absolute
+                if (url.startsWith("/")) {
+                    url = window.location.origin + url;
+                }
+
+                var modalEl = document.getElementById("shareModal");
+                var inputEl = document.getElementById("shareLinkInput");
+                inputEl.value = url;
+
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
+                document.getElementById("copyShareLinkBtn").onclick =
+                    function () {
+                        inputEl.select();
+                        inputEl.setSelectionRange(
+                            0,
+                            99999,
+                        ); /* For mobile devices */
+                        navigator.clipboard
+                            .writeText(inputEl.value)
+                            .then(function () {
+                                var btn =
+                                    document.getElementById("copyShareLinkBtn");
+                                var originalHtml =
+                                    '<i class="bi bi-clipboard me-1"></i> Copy Link';
+                                btn.innerHTML =
+                                    '<i class="bi bi-check-lg me-1"></i> Copied!';
+                                btn.classList.remove("btn-primary");
+                                btn.classList.add("btn-success");
+                                setTimeout(function () {
+                                    btn.innerHTML = originalHtml;
+                                    btn.classList.remove("btn-success");
+                                    btn.classList.add("btn-primary");
+                                }, 2000);
+                            });
+                    };
+            }
+
+            // Custom Delete Modal Logic
+            let deleteTargetUrl = "";
+
+            function confirmDeleteEvent(deleteUrl) {
+                deleteTargetUrl = deleteUrl;
+                var modal1 = new bootstrap.Modal(
+                    document.getElementById("deleteModal1"),
+                );
+                modal1.show();
+            }
+
+            function showDeleteModal2() {
+                // Hide first modal
+                var modalEl1 = document.getElementById("deleteModal1");
+                var modal1 = bootstrap.Modal.getInstance(modalEl1);
+                modal1.hide();
+
+                // Show second modal
+                var modalEl2 = document.getElementById("deleteModal2");
+                var modal2 = new bootstrap.Modal(modalEl2);
+
+                // Set form action
+                document.getElementById("deleteEventForm").action =
+                    deleteTargetUrl;
+
+                modal2.show();
+            }
+
+            // Edit Event Logic
+            function openEditEventModal(
+                editUrl,
+                name,
+                type,
+                visibility,
+                hasChat,
+                hasMinigames,
+                description,
+            ) {
+                document.getElementById("editEventForm").action = editUrl;
+                document.getElementById("editEventName").value = name;
+
+                // Set description for AI
+                document.getElementById("editEventDescription").value =
+                    description || name || "";
+
+                // Reset Image Fields
+                document.getElementById("editImageStatus").textContent =
+                    "No new image selected";
+                document.getElementById("editImageSource").value = "";
+                document.getElementById("editAiImageUrl").value = "";
+                document.getElementById("editFileInput").value = "";
+
+                // Set Radio Buttons
+                if (type && type.toLowerCase() === "online") {
+                    document.getElementById("editTypeOnline").checked = true;
+                } else {
+                    document.getElementById("editTypePhysical").checked = true;
+                }
+
+                if (visibility && visibility.toLowerCase() === "public") {
+                    document.getElementById("editVisPublic").checked = true;
+                } else {
+                    document.getElementById("editVisPrivate").checked = true;
+                }
+
+                // Set Checkboxes (Convert string '1'/'True' to boolean if needed, but safe to assume truthy/falsy check)
+                document.getElementById("editFeatChat").checked =
+                    hasChat == "1" || hasChat == "True" || hasChat === true;
+                document.getElementById("editFeatMinigames").checked =
+                    hasMinigames == "1" ||
+                    hasMinigames == "True" ||
+                    hasMinigames === true;
+
+                var modal = new bootstrap.Modal(
+                    document.getElementById("editEventModal"),
+                );
+                modal.show();
+            }
+
+            let sharedCurrentOffset = 0;
+            let sharedSwitchingToAI = false;
+
+            document.addEventListener("DOMContentLoaded", function () {
+                var sharedImageSelectionModalEl = document.getElementById(
+                    "sharedImageSelectionModal",
+                );
+                var sharedAiModalEl = document.getElementById("sharedAiModal");
+                var editEventModalEl =
+                    document.getElementById("editEventModal");
+
+                // Restore parent modal when selection closes
+                if (sharedImageSelectionModalEl) {
+                    sharedImageSelectionModalEl.addEventListener(
+                        "hidden.bs.modal",
+                        function () {
+                            if (sharedSwitchingToAI) {
+                                sharedSwitchingToAI = false;
+                            } else {
+                                var parentModal =
+                                    bootstrap.Modal.getOrCreateInstance(
+                                        editEventModalEl,
+                                    );
+                                parentModal.show();
+                            }
+                        },
+                    );
+                }
+
+                // Restore parent modal when AI closes
+                if (sharedAiModalEl) {
+                    sharedAiModalEl.addEventListener(
+                        "hidden.bs.modal",
+                        function () {
+                            var parentModal =
+                                bootstrap.Modal.getOrCreateInstance(
+                                    editEventModalEl,
+                                );
+                            parentModal.show();
+                        },
+                    );
+                }
+            });
+
+            function openSharedImageSelectionModal() {
+                // Hide parent
+                var parentModal = bootstrap.Modal.getInstance(
+                    document.getElementById("editEventModal"),
+                );
+                if (parentModal) parentModal.hide();
+
+                new bootstrap.Modal(
+                    document.getElementById("sharedImageSelectionModal"),
+                ).show();
+            }
+
+            function triggerSharedUpload() {
+                document.getElementById("editFileInput").click();
+            }
+
+            function handleSharedFileSelect(input) {
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+                    document.getElementById("editImageStatus").textContent =
+                        "Selected: " + file.name;
+                    document.getElementById("editImageSource").value = "upload";
+
+                    // Close selection modal
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("sharedImageSelectionModal"),
+                    ).hide();
+                }
+            }
+
+            function openSharedAIModal() {
+                sharedSwitchingToAI = true;
+                bootstrap.Modal.getInstance(
+                    document.getElementById("sharedImageSelectionModal"),
+                ).hide();
+
+                const aiModal = new bootstrap.Modal(
+                    document.getElementById("sharedAiModal"),
+                );
+                aiModal.show();
+
+                sharedCurrentOffset = 0;
+                fetchSharedImage(0);
+            }
+
+            function nextSharedImage() {
+                sharedCurrentOffset++;
+                fetchSharedImage(sharedCurrentOffset);
+            }
+
+            function fetchSharedImage(offset) {
+                const spinner = document.getElementById("sharedLoadingSpinner");
+                const img = document.getElementById("sharedFetchedImage");
+                const empty = document.getElementById("sharedEmptyState");
+                const error = document.getElementById("sharedErrorState");
+                const queryDisplay =
+                    document.getElementById("sharedQueryDisplay");
+                const controls = document.getElementById(
+                    "sharedResultControls",
+                );
+
+                const description = document.getElementById(
+                    "editEventDescription",
+                ).value;
+
+                spinner.classList.remove("d-none");
+                img.classList.add("d-none");
+                empty.classList.add("d-none");
+                error.classList.add("d-none");
+                controls.classList.add("d-none");
+
+                const fetchUrl =
+                    "{{ url_for('events.events_create_image_fetch') }}?description=" +
+                    encodeURIComponent(description) +
+                    "&offset=" +
+                    offset;
+
+                fetch(fetchUrl)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.error) throw new Error(data.error);
+
+                        img.src = data.image_url;
+                        img.classList.remove("d-none");
+                        controls.classList.remove("d-none");
+                        queryDisplay.textContent = `Found for: "${data.query}"`;
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        error.textContent = err.message;
+                        error.classList.remove("d-none");
+                    })
+                    .finally(() => {
+                        spinner.classList.add("d-none");
+                    });
+            }
+
+            function confirmSharedAIImage() {
+                const img = document.getElementById("sharedFetchedImage");
+                if (img.src && !img.classList.contains("d-none")) {
+                    document.getElementById("editAiImageUrl").value = img.src;
+                    document.getElementById("editImageSource").value = "ai";
+                    document.getElementById("editImageStatus").textContent =
+                        "AI Image Selected";
+
+                    bootstrap.Modal.getInstance(
+                        document.getElementById("sharedAiModal"),
+                    ).hide();
+                }
+            }
+
+            // Auto-dismiss alerts after 3 seconds
+            document.addEventListener("DOMContentLoaded", function () {
+                setTimeout(function () {
+                    var alerts = document.querySelectorAll(".alert");
+                    alerts.forEach(function (alert) {
+                        var bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    });
+                }, 3000);
+            });
+        </script>
+    </body>
+</html>

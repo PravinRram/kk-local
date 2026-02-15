@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='auth/css/style.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+{% block page_wrapper_class %}no-sidebar{% endblock %}
+
+{% block content %}
+  <div class="content-grid {{ 'no-guide' if is_owner else '' }}">
+    <section class="card insta-profile">
+      <div class="insta-header">
+        <div class="insta-avatar-wrap">
+          <img
+            class="insta-avatar"
+            src="{{ avatar_url(user.profile_picture_url) }}"
+            alt="Profile picture"
+          />
+        </div>
+        <div class="insta-details">
+          <div class="insta-top-row">
+            <div>
+              <h2 class="insta-username">@{{ user.username }}</h2>
+              <p class="insta-name">{{ user.display_name or user.username }}</p>
+            </div>
+            <div class="insta-actions">
+                {% if is_owner %}
+                  <a class="button primary" href="{{ url_for('auth.profile_edit') }}">Edit Profile</a>
+                  <a class="button outline" href="{{ url_for('auth.logout') }}">Logout</a>
+                {% elif is_following %}
+                  <form method="post" action="{{ url_for('auth.unfollow_user', username=user.username) }}">
+                    {{ csrf_token() }}
+                    <button class="button outline" type="submit">Unfollow</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('auth.follow_user', username=user.username) }}">
+                    {{ csrf_token() }}
+                    <button class="button outline" type="submit">Follow</button>
+                  </form>
+                {% endif %}
+                
+                {% if not is_owner %}
+                  {% if can_message %}
+                    <a class="button primary" href="{{ url_for('auth.games') }}">Challenge</a>
+                  {% else %}
+                    <button class="button outline" type="button" disabled>Challenge</button>
+                  {% endif %}
+                {% endif %}
+              </div>
+          </div>
+          <div class="insta-meta">
+            {% if user.location %}
+              <span>{{ user.location }}</span>
+            {% endif %}
+            {% if user.gender %}
+              <span>{{ user.gender|title }}</span>
+            {% endif %}
+            {% if user.age_group %}
+              <span>{{ user.age_group|title }}</span>
+            {% endif %}
+          </div>
+          <div class="insta-stats">
+            <div>
+              <strong>0</strong>
+              <span>Posts</span>
+            </div>
+            <a href="{{ url_for('auth.followers_list', username=user.username) }}">
+              <strong>{{ followers_count }}</strong>
+              <span>Followers</span>
+            </a>
+            <a href="{{ url_for('auth.following_list', username=user.username) }}">
+              <strong>{{ following_count }}</strong>
+              <span>Following</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="insta-divider"></div>
+
+      {% if private %}
+        <div class="insta-private">
+          <div class="insta-private-icon">
+            <i data-feather="lock"></i>
+          </div>
+          <h3>This account is private</h3>
+          <p class="muted">
+            Follow {{ user.display_name or user.username }} to see their photos, stories, and posts.
+          </p>
+        </div>
+      {% else %}
+        <div class="insta-bio">
+          <h3>Bio/About Me</h3>
+          <p>{{ user.bio or "No bio shared." }}</p>
+        </div>
+
+        <div class="insta-interests">
+          <h3>Interests</h3>
+          <div class="tag-grid">
+            {% for hobby in user.hobbies %}
+              <span class="tag pill">{{ hobby.name }}</span>
+            {% else %}
+              <p class="muted">No interests shared.</p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+    </section>
+
+    {% if current_user and not is_owner %}
+      <aside class="card mutual-sidebar">
+        <div class="mutual-section">
+          <h3>Followed By</h3>
+          <p class="muted small">People they are followed by that you also follow.</p>
+          <div class="mutual-list spacer-top" data-mutual-list>
+            {% for mutual in mutual_followers %}
+              <div class="mutual-card {% if loop.index0 >= 3 %}is-hidden{% endif %}">
+                <div class="mutual-avatar">{{ mutual.display_name[:1] if mutual.display_name else mutual.username[:1] }}</div>
+                <div>
+                  <strong>{{ mutual.display_name or mutual.username }}</strong>
+                  <p class="muted">@{{ mutual.username }}</p>
+                </div>
+              </div>
+            {% else %}
+              <p class="muted">No shared connections yet.</p>
+            {% endfor %}
+          </div>
+          {% if mutual_followers|length > 3 %}
+            <button class="button outline small spacer-top" type="button" data-show-more>Show more</button>
+          {% endif %}
+        </div>
+
+        <div class="spacer-top mutual-section">
+          <h3>Mutual Events</h3>
+          <p class="muted small">Events you might both like.</p>
+          <div class="mutual-list spacer-top">
+            {% for event in mutual_events %}
+              <div class="mutual-card">
+                <div class="mutual-avatar">E</div>
+                <div>
+                  <strong>
+                    {% if event.event_code %}
+                      <a href="{{ url_for('events.events_detail', event_code=event.event_code) }}">{{ event.event_name }}</a>
+                    {% else %}
+                      {{ event.event_name }}
+                    {% endif %}
+                  </strong>
+                </div>
+              </div>
+            {% else %}
+              <p class="muted">No shared events yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="spacer-top mutual-section">
+          <h3>Mutual Forums</h3>
+          <p class="muted small">Forums you might both enjoy.</p>
+          <div class="mutual-list spacer-top">
+            {% for forum in mutual_forums %}
+              <div class="mutual-card">
+                <div class="mutual-avatar">F</div>
+                <div>
+                  <strong><a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}">{{ forum.name }}</a></strong>
+                </div>
+              </div>
+            {% else %}
+              <p class="muted">No shared forums yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </aside>
+    {% endif %}
+  </div>
+  <script src="{{ url_for('static', filename='auth/js/profile_public.js') }}"></script>
+{% endblock %}

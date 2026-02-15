@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Event with AI - KampongKonek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ai_agent_workspace.css') }}">
+    <style>
+        .ai-change-highlight {
+            background-color: rgba(240, 107, 66, 0.2) !important;
+            padding: 0 4px;
+            border-radius: 2px;
+            transition: background-color 0.5s ease;
+        }
+        .review-actions-container {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <div class="spinner-grow" style="width: 3rem; height: 3rem; color: #F06B42;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-3 fw-bold text-muted">Finalizing details...</div>
+    </div>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom shadow-sm" style="height: 60px; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;">
+        <button onclick="confirmExit()" class="btn btn-link text-decoration-none text-dark fw-bold border-0 p-0"><i class="bi bi-arrow-left me-2"></i>Back to events</button>
+        <button onclick="finalizeEvent()" class="btn btn-dark rounded-pill px-4">Finalize Event</button>
+    </div>
+
+    <!-- Exit Confirmation Modal -->
+    <div class="modal fade" id="exitModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exit Session?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Do you want to save this session for later, or discard it?
+                    <div class="text-muted small mt-2">
+                        "Save" keeps it in your history.<br>
+                        "Discard" deletes it permanently.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('events.events_revert_ai_session', session_id=session.session_id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Discard Changes</button>
+                    </form>
+                    <a href="{{ url_for('events.events_create_ai_agent') }}" class="btn btn-success">Save & Exit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Match Image Modal -->
+    <div class="modal fade" id="smartMatchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Smart Match Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="smartMatchSpinner" class="spinner-border text-primary d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div id="smartMatchContent" class="d-none">
+                        <img id="smartMatchImage" src="" class="img-fluid rounded mb-3" style="max-height: 300px; object-fit: cover;">
+                        <div class="text-muted small mb-3">Found for: "<span id="smartMatchQuery"></span>"</div>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-outline-secondary" onclick="tryAnotherImage()">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Try Another
+                            </button>
+                            <button class="btn btn-primary" onclick="useSmartMatchImage()">
+                                <i class="bi bi-check-lg me-1"></i> Use This Image
+                            </button>
+                        </div>
+                    </div>
+                    <div id="smartMatchError" class="text-danger d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revert Warning Modal -->
+    <div class="modal fade" id="revertModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning-subtle">
+                    <h5 class="modal-title text-warning-emphasis"><i class="bi bi-exclamation-triangle-fill me-2"></i>Warning: Irreversible Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Reverting to this message will <strong>delete all subsequent messages and changes</strong>.</p>
+                    <p class="mb-0">The content of the message you selected will be restored to your input box.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmRevertBtn">Yes, Revert & Delete Future</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left: Chat -->
+            <div class="col-md-4 border-end p-0 chat-container d-flex flex-column" style="height: calc(100vh - 60px);">
+                
+                <!-- Chat Header -->
+                <div class="chat-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-white flex-shrink-0">
+                    <span class="fw-bold small text-uppercase text-muted">Chat Session</span>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary border-0 dropdown-toggle" type="button" id="historyDropdown" data-bs-toggle="dropdown" aria-expanded="false" onclick="loadHistory()">
+                            <i class="bi bi-clock-history me-1"></i> History
+                        </button>
+                        <div class="dropdown-menu p-0 shadow-lg border-0" aria-labelledby="historyDropdown" style="width: 320px;">
+                            <div class="p-2 border-bottom bg-light fw-bold small text-muted">Session History</div>
+                            <div id="history-list" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                                <!-- Populated by JS -->
+                                <div class="text-center p-3 text-muted small">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-history d-flex flex-column flex-grow-1" id="chat-history" style="overflow-y: auto;">
+                    <!-- History Messages -->
+                    {% for msg in messages %}
+                        <div class="msg-bubble {{ 'msg-host' if msg.role == 'admin' else 'msg-ai' }}">
+                            {{ msg.content | safe }} 
+                            <!-- Display raw text; JavaScript handles markdown for new messages -->
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="chat-input-area">
+                    <!-- Drag and Drop Zone -->
+    <div id="drop-zone" class="drop-zone mb-2" onclick="document.getElementById('file-upload').click()" style="display: none;">
+                        <i class="bi bi-cloud-upload drop-zone-icon"></i>
+                        <p class="mb-0">Drag and drop an image here, or click to browse</p>
+                        <input type="file" id="file-upload" class="d-none" accept="image/*" onchange="handleFileUpload(this.files)">
+                    </div>
+
+                    <div class="chat-input-wrapper">
+                        <textarea id="user-input" class="chat-input-field" rows="1" placeholder="Host Anything" style="resize: none;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                        
+                        <div class="chat-input-actions">
+                            <div class="chat-action-left">
+                                <button class="btn btn-link text-dark p-0" onclick="toggleDropZone()" title="Upload Image">
+                                    <i class="bi bi-image fs-5"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="chat-action-right">
+                                <button id="send-btn" class="btn btn-dark rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" onclick="sendMessage()">
+                                    <i class="bi bi-arrow-up text-white"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Panels -->
+            <div class="col-md-8 panels-container bg-gray-200 ps-4 pt-3">
+                
+                <div class="row">
+                    <!-- Left Column: Preview -->
+                    <div class="col-md-5 d-flex flex-column gap-4">
+                        
+                        <!-- Preview Section Box -->
+                        <div class="panel-container-box">
+                            <div class="panel-header-inside">Preview <span class="badge bg-light text-dark border d-none" id="preview-updated"><i class="bi bi-arrow-repeat"></i> Updated</span></div>
+                            
+                            <!-- Replica Card -->
+                            <div class="kk-card-replica shadow-sm">
+                                <div class="kk-card-image position-relative bg-light d-flex align-items-center justify-content-center" style="min-height: 200px; overflow: hidden;">
+                                    <!-- Fallback Icon -->
+                                    <div id="img-fallback" class="text-secondary {{ 'd-none' if current_draft.image_url else '' }}">
+                                        <i class="bi bi-image" style="font-size: 4rem;"></i>
+                                    </div>
+                                    
+                                    <!-- Image -->
+                                    <img id="preview-image" 
+                                         src="{{ current_draft.image_url }}" 
+                                         alt="Event Image" 
+                                         class="img-fluid position-absolute top-0 start-0 w-100 h-100 {{ 'd-none' if not current_draft.image_url else '' }}" 
+                                         style="object-fit: cover;"
+                                         onerror="this.classList.add('d-none'); document.getElementById('img-fallback').classList.remove('d-none');">
+                                    
+                                    <!-- Menu Dots Replica -->
+                                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 2;">
+                                        <button class="btn btn-light rounded-circle btn-sm shadow-sm" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-three-dots" style="font-size: 0.8rem;"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body pt-2 pb-2 px-3">
+                                    <div class="small fw-bold text-dark mb-1" id="preview-date-range" style="font-size: 0.75rem;">
+                                        {{ current_draft.start_date or 'YYYY-MM-DD' }} - {{ current_draft.end_date or 'YYYY-MM-DD' }}
+                                    </div>
+                                    <h6 class="card-title fw-bold mb-1" id="preview-title" style="font-size: 0.95rem;">
+                                        {{ current_draft.event_name or 'Event Title' }}
+                                    </h6>
+                                    <div class="text-muted small mb-1" id="preview-details" style="font-size: 0.8rem;">
+                                        Type: {{ current_draft.event_type | title }}<br>
+                                        Venue: {{ current_draft.location or 'TBD' }}<br>
+                                        Time: {{ current_draft.start_time or '--:--' }} - {{ current_draft.end_time or '--:--' }}
+                                    </div>
+                                </div>
+                                <div class="card-footer py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button class="btn btn-outline-secondary btn-sm flex-grow-1 me-2" style="font-size: 0.75rem;"><i class="bi bi-star me-1"></i>Interested</button>
+                                        <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.75rem;"><i class="bi bi-share"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tags Section -->
+                        <div class="panel-container-box">
+                            <div class="panel-header-inside">Tags/Interests</div>
+                            <p class="fw-bold small text-secondary mb-0" id="preview-tags">{{ current_draft.interest_tags or "#NoTags" }}</p>
+                        </div>
+
+                        <!-- Description Section -->
+                        <div class="panel-container-box">
+                            <div class="panel-header-inside">Description <span class="badge bg-light text-dark border d-none" id="desc-updated"><i class="bi bi-arrow-repeat"></i> Updated</span></div>
+                            <div class="description-scroll-area">
+                                <p class="text-muted mb-0" id="preview-description" style="white-space: pre-wrap;">{{ (current_draft.description or "No description yet.") | trim }}</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: AI Understands, Impact Check -->
+                    <div class="col-md-7 d-flex flex-column gap-4">
+                        
+                        <!-- What AI Understands Section -->
+                        <div class="panel-container-box">
+                            <div class="panel-header-inside">What the AI understands <span class="badge bg-light text-dark border d-none" id="ai-updated"><i class="bi bi-arrow-repeat"></i> Updated</span></div>
+                            <ul class="list-unstyled mb-0" id="ai-understands-list" style="font-size: 0.95rem; line-height: 1.5;">
+                                <!-- Populated by JS -->
+                            </ul>
+                        </div>
+
+                        <!-- Impact Check -->
+                        <div class="impact-card"> <!-- Keep impact card separate/colored -->
+                            <div class="panel-header-inside">AI Impact Check for Intergen Interaction <span class="badge bg-white text-dark border d-none" id="impact-updated"><i class="bi bi-arrow-repeat"></i> Updated</span></div>
+                            <div id="impact-content">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="pb-5"></div> <!-- Spacer -->
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = {{ session.session_id }};
+        let currentDraft = {{ current_draft | tojson }};
+        let lastDraftState = JSON.parse(JSON.stringify(currentDraft)); //copy
+        let currentImpact = {{ impact_result | tojson }};
+
+        function confirmExit() {
+            const modal = new bootstrap.Modal(document.getElementById('exitModal'));
+            modal.show();
+        }
+
+        function finalizeEvent() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            window.location.href = "{{ url_for('events.events_create_ai_review', session_id=session.session_id) }}";
+        }
+
+        // --- History Functions ---
+        // loadHistory called by onclick in HTML
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            // Don't clear if already loaded, but maybe show spinner if empty
+            if (list.children.length === 0 || list.innerHTML.includes('Loading...')) {
+                 list.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+            }
+            
+            try {
+                const res = await fetch(`/api/ai-agent/history?session_id=${sessionId}`);
+                const data = await res.json();
+                
+                if (data.messages) {
+                    renderHistoryList(data.messages);
+                }
+            } catch (e) {
+                list.innerHTML = '<div class="text-danger p-3 small">Failed to load history.</div>';
+            }
+        }
+
+        function renderHistoryList(messages) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            
+            if (messages.length === 0) {
+                list.innerHTML = '<div class="text-muted p-3 small text-center">No history yet.</div>';
+                return;
+            }
+
+            // Loop through messages
+            messages.forEach((msg, index) => {
+                const isLast = index === messages.length - 1;
+                const isUser = msg.role === 'admin';
+                const roleLabel = isUser ? 'You' : 'AI';
+                
+                // Parse content if JSON
+                let content = msg.content;
+                let displayContent = content;
+                try {
+                    const json = JSON.parse(content);
+                    if (json.assistant_block) displayContent = json.assistant_block;
+                } catch(e) {}
+                
+                // Truncate for display
+                if (displayContent.length > 50) displayContent = displayContent.substring(0, 50) + '...';
+                
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action p-2';
+                
+                // Revert Button Logic:
+                // Only for USER messages that are NOT the last message
+                // (Can't revert to current state, no point)
+                // Actually user said "revert to C... C, AI C... deleted". So even if it's the last user message, 
+                // if there are AI messages after it, or if they want to edit C, they can revert.
+                // We allow reverting to ANY user message.
+                
+                let revertBtn = '';
+                if (isUser) {
+                    // Calculate the ID to revert TO (The message BEFORE this one)
+                    // If index is 0, target is -1 (start).
+                    // If index > 0, target is messages[index-1].message_id
+                    
+                    const targetId = (index === 0) ? -1 : messages[index-1].message_id;
+                    // Escape single quotes for the onclick string
+                    const safeContent = content.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    
+                    revertBtn = `
+                    <button class="btn btn-xs btn-outline-danger ms-2" style="font-size: 0.7rem;" 
+                        onclick="initiateRevert('${targetId}', '${safeContent}')">
+                        Revert
+                    </button>`;
+                }
+
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div style="min-width: 0;">
+                            <div class="fw-bold small ${isUser ? 'text-primary' : 'text-success'}">${roleLabel}</div>
+                            <div class="small text-muted text-truncate">${displayContent}</div>
+                        </div>
+                        ${revertBtn}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        let pendingRevertTargetId = null;
+        let pendingRevertContent = "";
+
+        function initiateRevert(targetId, content) {
+            pendingRevertTargetId = targetId;
+            pendingRevertContent = content;
+            const modal = new bootstrap.Modal(document.getElementById('revertModal'));
+            
+            // Set up confirm button
+            document.getElementById('confirmRevertBtn').onclick = executeRevert;
+            
+            modal.show();
+        }
+
+        async function executeRevert() {
+            // Store content to restore in input box after reload
+            sessionStorage.setItem('restored_prompt', pendingRevertContent);
+            
+            try {
+                const res = await fetch('/api/ai-agent/revert', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId, message_id: pendingRevertTargetId })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert("Revert failed: " + (data.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Error connecting to server.");
+            }
+        }
+        
+        // On Page Load: Check if we need to restore a prompt
+        document.addEventListener('DOMContentLoaded', () => {
+             const restored = sessionStorage.getItem('restored_prompt');
+             if (restored) {
+                 const input = document.getElementById('user-input');
+                 input.value = restored;
+                 // Adjust height
+                 input.style.height = 'auto';
+                 input.style.height = input.scrollHeight + 'px';
+                 sessionStorage.removeItem('restored_prompt');
+             }
+        });
+
+        // -------------------------
+
+        function renderAIMessageContent(text) {
+            if (!text) return "";
+            try {
+                // Parse the JSON data
+                const data = JSON.parse(text);
+                
+                // Check if it matches our schema
+                if (data.assistant_block) {
+                    let html = `<div class="mb-2">${marked.parse(data.assistant_block)}</div>`;
+                    
+                    if (data.summary_items && data.summary_items.length > 0) {
+                        html += `
+                            <div class="msg-ai-summary">
+                                <div class="fw-bold mb-1">${data.summary_block_title || "Summary:"}</div>
+                                <ul>
+                                    ${data.summary_items.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
+                    // Show advisory or warning message
+                    const advisoryText = data.advisory_message || data.warning_message;
+                    
+                    if (advisoryText) {
+                        // Add the warning with some spacing
+                        html += `
+                            <div class="msg-warning mt-3">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <div>${advisoryText}</div>
+                            </div>
+                        `;
+                    }
+
+                    return html;
+                }
+            } catch (e) {
+                // If parsing fails, treat as plain markdown text
+            }
+            return renderMarkdown(text);
+        }
+
+        function renderMarkdown(text) {
+            let html = marked.parse(text);
+            // Apply diff-text class to lists following "Here's what I changed"
+            if (html.includes("Here&#39;s what I changed") || html.includes("Here's what I changed")) {
+                html = html.replace(
+                    /(<p><strong>Here['&#39;]s what I changed:?<\/strong><\/p>\s*)<ul>/i, 
+                    '$1<ul class="diff-text">'
+                );
+            }
+            return html;
+        }
+        
+        // Initial Render
+        document.querySelectorAll('.msg-ai').forEach(el => {
+            if(!el.id.startsWith('loading')) {
+                // Store raw content for later use
+                const rawContent = el.textContent;
+                el.dataset.raw = rawContent;
+                el.innerHTML = renderAIMessageContent(rawContent);
+            }
+        });
+        
+        // Update panels with the current draft state
+        updatePanels(currentDraft, currentImpact, {}, null); 
+        
+        // Check the last AI message for a thinking summary
+        const lastAiMsg = document.querySelector('.msg-ai:last-of-type');
+        if (lastAiMsg && lastAiMsg.dataset.raw) {
+             try {
+                 const data = JSON.parse(lastAiMsg.dataset.raw);
+                 if (data.ai_thinking_summary) {
+                     updatePanels(currentDraft, currentImpact, {}, data.ai_thinking_summary);
+                 }
+             } catch(e) {}
+        }
+
+        // Enter key to send + Button Highlight
+        const inputField = document.getElementById('user-input');
+        const sendBtnIcon = document.querySelector('#send-btn i');
+
+        // Paste Handler for Images
+        inputField.addEventListener('paste', async function(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.includes('image/')) {
+                    e.preventDefault(); // Prevent pasting the binary string
+                    
+                    const file = item.getAsFile();
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    // Show uploading state
+                    const originalPlaceholder = this.placeholder;
+                    this.placeholder = "Uploading image...";
+                    this.disabled = true;
+                    
+                    try {
+                        const response = await fetch('/api/ai-agent/upload-image', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        
+                        if (data.path) {
+                            // Add a text note about the uploaded image so the AI knows about it
+                            const textToInsert = ` [I uploaded an image at ${data.path}]`;
+                            this.value += textToInsert;
+                            
+                            // Let the user send the message manually
+                        } else {
+                            alert("Upload failed: " + (data.error || "Unknown error"));
+                        }
+                    } catch (err) {
+                        console.error("Upload error", err);
+                        alert("Error uploading image.");
+                    } finally {
+                        this.placeholder = originalPlaceholder;
+                        this.disabled = false;
+                        this.focus();
+                    }
+                }
+            }
+        });
+
+        // Smart Match Logic
+        let smartMatchOffset = 0;
+        let currentSmartMatchQuery = "";
+        let currentSmartMatchUrl = "";
+
+        function openSmartMatchModal(query) {
+            currentSmartMatchQuery = query;
+            smartMatchOffset = 0;
+            const modal = new bootstrap.Modal(document.getElementById('smartMatchModal'));
+            modal.show();
+            fetchSmartMatchImage();
+        }
+
+        async function fetchSmartMatchImage() {
+            const spinner = document.getElementById('smartMatchSpinner');
+            const content = document.getElementById('smartMatchContent');
+            const errorDiv = document.getElementById('smartMatchError');
+            const img = document.getElementById('smartMatchImage');
+            const querySpan = document.getElementById('smartMatchQuery');
+
+            spinner.classList.remove('d-none');
+            content.classList.add('d-none');
+            errorDiv.classList.add('d-none');
+            querySpan.textContent = currentSmartMatchQuery;
+
+            try {
+                const response = await fetch(`/events/create/image/fetch?query=${encodeURIComponent(currentSmartMatchQuery)}&offset=${smartMatchOffset}`);
+                const data = await response.json();
+
+                if (data.image_url) {
+                    img.src = data.image_url;
+                    currentSmartMatchUrl = data.image_url;
+                    content.classList.remove('d-none');
+                } else {
+                    errorDiv.textContent = "No images found.";
+                    errorDiv.classList.remove('d-none');
+                }
+            } catch (err) {
+                errorDiv.textContent = "Error fetching image.";
+                errorDiv.classList.remove('d-none');
+            } finally {
+                spinner.classList.add('d-none');
+            }
+        }
+
+        function tryAnotherImage() {
+            smartMatchOffset++;
+            fetchSmartMatchImage();
+        }
+
+        function useSmartMatchImage() {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('smartMatchModal')).hide();
+            
+            // Prepare the message for the AI
+            const msg = `I have selected this image: ${currentSmartMatchUrl}`;
+            
+            // Send the message immediately
+            const input = document.getElementById('user-input');
+            const originalValue = input.value;
+            input.value = msg;
+            sendMessage();
+        }
+
+        inputField.addEventListener('input', function() {
+            const btn = document.getElementById('send-btn');
+            if (this.value.trim().length > 0) {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('disabled');
+            }
+        });
+
+        inputField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add User Message
+            appendMessage('admin', message);
+            input.value = '';
+            input.style.height = ''; // Reset height
+            
+            // Add Loading Bubble
+            const loadingId = appendLoading();
+
+            try {
+                const response = await fetch('/api/ai-agent/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId, message: message })
+                });
+                const data = await response.json();
+                
+                // Remove Loading
+                document.getElementById(loadingId).remove();
+                
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Add AI Message
+                appendMessage('ai', data.ai_message);
+                
+                // Parse AI message to get intent summary and image suggestion
+                let intentSummary = null;
+                try {
+                    const aiData = JSON.parse(data.ai_message);
+                    console.log("[DEBUG] AI Response Data:", aiData); 
+                    intentSummary = aiData.ai_thinking_summary;
+                    
+                    if (aiData.suggest_image_query) {
+                        console.log("[DEBUG] Triggering Smart Match with:", aiData.suggest_image_query);
+                        openSmartMatchModal(aiData.suggest_image_query);
+                    }
+                } catch(e) {
+                    console.error("[DEBUG] Error parsing AI message for actions:", e);
+                }
+
+                // Update Panels
+                currentDraft = data.draft;
+                currentImpact = data.impact;
+
+                if (data.requires_approval) {
+                    // Show what changed by comparing with the previous draft
+                    updatePanels(currentDraft, currentImpact, data.patch, intentSummary, lastDraftState);
+                    
+                    // Add buttons for the user to approve or deny the changes
+                    const history = document.getElementById('chat-history');
+                    const actionDiv = document.createElement('div');
+                    actionDiv.className = 'review-actions-container';
+                    actionDiv.innerHTML = `
+                        <div class="small fw-bold text-secondary">Review changes:</div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="denyChanges()"><i class="bi bi-x-lg me-1"></i>Deny</button>
+                        <button class="btn btn-sm btn-success" onclick="approveChanges()"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                    `;
+                    history.appendChild(actionDiv);
+                    history.scrollTop = history.scrollHeight;
+                } else {
+                    // Auto-commit (first turn or no changes needed)
+                    lastDraftState = JSON.parse(JSON.stringify(currentDraft));
+                    updatePanels(currentDraft, currentImpact, data.patch, intentSummary, null);
+                }
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById(loadingId).remove();
+                alert("Error sending message");
+            }
+        }
+
+        function appendMessage(role, text) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = `msg-bubble ${role === 'admin' ? 'msg-host' : 'msg-ai'}`;
+            if (role === 'ai') {
+                div.innerHTML = renderAIMessageContent(text);
+            } else {
+                div.textContent = text;
+            }
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function appendLoading() {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'msg-bubble msg-ai';
+            div.id = 'loading-' + Date.now();
+            div.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            return div.id;
+        }
+
+        async function approveChanges() {
+             const container = document.querySelector('.review-actions-container');
+             if(container) container.remove();
+             
+             // Commit changes
+             lastDraftState = JSON.parse(JSON.stringify(currentDraft));
+             
+             // Clear highlights
+             updatePanels(currentDraft, currentImpact, {}, null, null);
+        }
+
+        async function denyChanges() {
+             const container = document.querySelector('.review-actions-container');
+             if(container) container.remove();
+             
+             try {
+                 const response = await fetch('/api/ai-agent/undo', {
+                     method: 'POST',
+                     headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify({ session_id: sessionId })
+                 });
+                 const data = await response.json();
+                 
+                 if(data.success) {
+                     currentDraft = data.draft;
+                     currentImpact = data.impact;
+                     lastDraftState = JSON.parse(JSON.stringify(currentDraft));
+                     
+                     updatePanels(currentDraft, currentImpact, {}, null, null);
+                     
+                     const history = document.getElementById('chat-history');
+                     // Remove AI msg and User msg
+                     // We need to be careful not to remove older messages if logic is wrong.
+                     // But strictly, we just added them.
+                     if(history.lastElementChild) history.lastElementChild.remove(); // AI
+                     if(history.lastElementChild) history.lastElementChild.remove(); // User
+                 } else {
+                     alert("Undo failed: " + (data.error || "Unknown"));
+                 }
+             } catch(e) {
+                 console.error(e);
+                 alert("Error undoing changes");
+             }
+        }
+
+        function updatePanels(draft, impact, patch = {}, intentSummary = null, previousDraft = null) {
+            // Helper to show update badge if field changed
+            const showUpdate = (id, fields) => {
+                const el = document.getElementById(id);
+                if (fields.some(f => patch.hasOwnProperty(f))) {
+                    el.classList.remove('d-none');
+                    // Hide after 3 seconds
+                    setTimeout(() => el.classList.add('d-none'), 3000);
+                }
+            };
+
+            // Helper for 12h Time Format
+            const to12h = (timeStr) => {
+                if (!timeStr) return '--:--';
+                try {
+                    const [h, m] = timeStr.split(':');
+                    const hour = parseInt(h);
+                    if (isNaN(hour)) return timeStr; // Fallback if parsing fails
+                    
+                    // Ensure minutes are 2 digits
+                    const minutes = (m || '00').padEnd(2, '0').substring(0,2);
+                    const suffix = hour >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour % 12 || 12;
+                    return `${hour12}:${minutes} ${suffix}`;
+                } catch (e) {
+                    return timeStr;
+                }
+            };
+
+            // Helper for Highlighting
+            const getHighlight = (field, val) => {
+                if (!previousDraft) return val || '?';
+                const oldVal = previousDraft[field];
+                const newVal = draft[field];
+                // Simple equality check (works for strings/bools/numbers)
+                if (oldVal != newVal) {
+                    return `<span class="ai-change-highlight">${val || '?'}</span>`;
+                }
+                return val || '?';
+            };
+            
+            // Helper for boolean features highlighting
+            const getFeatureHighlight = (field, label, val) => {
+                 const isOn = val ? 'ON' : 'OFF';
+                 if (!previousDraft) return `${label}=${isOn}`;
+                 const oldVal = previousDraft[field];
+                 if (oldVal != val) {
+                     return `${label}=<span class="ai-change-highlight">${isOn}</span>`;
+                 }
+                 return `${label}=${isOn}`;
+            };
+
+            // Preview Card
+            document.getElementById('preview-title').textContent = draft.event_name || 'Event Title';
+            document.getElementById('preview-date-range').textContent = (draft.start_date || '') + ' - ' + (draft.end_date || '');
+            
+            // Image Preview Update
+            const imgEl = document.getElementById('preview-image');
+            const fallbackEl = document.getElementById('img-fallback');
+            
+            if (draft.image_url) {
+                // Handle relative paths for uploads
+                let src = draft.image_url;
+                if (!src.startsWith('http') && !src.startsWith('/')) {
+                    // Assuming uploads are served from /media/
+                    src = '/media/' + src;
+                }
+                imgEl.src = src;
+                imgEl.classList.remove('d-none');
+                fallbackEl.classList.add('d-none');
+            } else {
+                imgEl.classList.add('d-none');
+                fallbackEl.classList.remove('d-none');
+            }
+
+            // Format Type: "Physical, Public"
+            let typeDisplay = (draft.event_type || '').replace(/^\w/, c => c.toUpperCase());
+            if (draft.visibility) {
+                typeDisplay += `, ${draft.visibility.replace(/^\w/, c => c.toUpperCase())}`;
+            }
+
+            document.getElementById('preview-details').innerHTML = `
+                Type: ${typeDisplay}<br>
+                Venue: ${draft.location || 'TBD'}<br>
+                Time: ${to12h(draft.start_time)} - ${to12h(draft.end_time)}
+            `;
+            document.getElementById('preview-description').textContent = draft.description || "No description yet.";
+            document.getElementById('preview-tags').textContent = draft.interest_tags || "#NoTags";
+            
+            // Check updates
+            showUpdate('preview-updated', ['event_name', 'start_date', 'end_date', 'event_type', 'location', 'start_time', 'end_time', 'image_url']);
+            showUpdate('desc-updated', ['description']);
+
+            // AI Understands
+            const understandsList = document.getElementById('ai-understands-list');
+            
+            let intentHtml = '';
+            if (intentSummary) {
+                intentHtml = `<li class="mb-2 fst-italic text-primary">"${intentSummary}"</li>`;
+            } else if (draft.ai_thinking_summary) {
+                 // Use summary from draft if available
+                 intentHtml = `<li class="mb-2 fst-italic text-primary">"${draft.ai_thinking_summary}"</li>`;
+            } else {
+                 // Fallback
+                 intentHtml = `<li class="mb-2 fst-italic text-muted">Listening for details...</li>`;
+            }
+
+            understandsList.innerHTML = `
+                ${intentHtml}
+                <li><strong>Type:</strong> ${getHighlight('event_type', draft.event_type)}</li>
+                <li><strong>Venue:</strong> ${getHighlight('location', draft.location)}</li>
+                <li><strong>Visibility:</strong> ${getHighlight('visibility', draft.visibility)}</li>
+                <li><strong>Date:</strong> ${getHighlight('start_date', draft.start_date)}</li>
+                <li><strong>Time:</strong> ${getHighlight('start_time', to12h(draft.start_time))}</li>
+                <li><strong>Features:</strong> 
+                    ${getFeatureHighlight('enable_group_chat', 'Chat', draft.enable_group_chat)}, 
+                    ${getFeatureHighlight('enable_minigames', 'Minigames', draft.enable_minigames)}
+                </li>
+            `;
+            showUpdate('ai-updated', ['event_type', 'location', 'visibility', 'start_date', 'start_time', 'enable_group_chat', 'enable_minigames']);
+
+            // Impact Check
+            const impactContent = document.getElementById('impact-content');
+            let label = impact.label || (impact.score >= 70 ? 'Strong' : (impact.score >= 40 ? 'Moderate' : 'Weak'));
+            let html = `<p class="fw-bold mb-2">Overall: ${label} (${impact.score}/100)</p>`;
+            
+            if (impact.short_label) {
+                html += `<p class="small text-muted mb-2"><em>${impact.short_label}</em></p>`;
+            }
+            
+            // Reasons
+            if (impact.reasons && impact.reasons.length > 0) {
+                impact.reasons.forEach(r => {
+                    html += `<div class="impact-item"><span class="impact-icon"><i class="bi bi-info-circle-fill impact-neutral"></i></span><span>${r}</span></div>`;
+                });
+            }
+
+            // Suggestions (from changes)
+            if (impact.changes && impact.changes.length > 0) {
+                html += `<div class="mt-3"><small class="fw-bold">Suggestions:</small><ul class="mb-0 ps-3 small">`;
+                impact.changes.forEach(c => html += `<li>${c.explanation}</li>`);
+                html += `</ul></div>`;
+            }
+
+            impactContent.innerHTML = html;
+            
+            // Impact updates if draft changed substantially
+            if (Object.keys(patch).length > 0) {
+                 const el = document.getElementById('impact-updated');
+                 el.classList.remove('d-none');
+                 setTimeout(() => el.classList.add('d-none'), 3000);
+            }
+        }
+
+        // Upload UI Logic
+        function toggleDropZone() {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone.style.display === 'none' || !dropZone.style.display) {
+                dropZone.style.display = 'block';
+            } else {
+                dropZone.style.display = 'none';
+            }
+        }
+
+        async function handleFileUpload(files) {
+            if (!files || files.length === 0) return;
+            const file = files[0];
+            if (!file.type.startsWith('image/')) {
+                alert("Please upload an image.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Show uploading state in drop zone
+            const dropZone = document.getElementById('drop-zone');
+            const originalContent = dropZone.innerHTML;
+            dropZone.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mb-0 mt-2">Uploading...</p>';
+
+            try {
+                const response = await fetch('/api/ai-agent/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.path) {
+                    // Simulate a user message to confirm the upload
+                    const msg = ` [I uploaded an image at ${data.path}]`;
+                    const input = document.getElementById('user-input');
+                    input.value += msg;
+                    sendMessage();
+                    
+                    // Hide drop zone
+                    toggleDropZone();
+                } else {
+                    alert("Upload failed: " + (data.error || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Upload error", err);
+                alert("Error uploading image.");
+            } finally {
+                // Restore drop zone content
+                dropZone.innerHTML = originalContent;
+            }
+        }
+
+        // Drag and Drop Events
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFileUpload(files);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

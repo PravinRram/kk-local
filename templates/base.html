@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KampongKonek{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:FILL,GRAD@0..1,-25..200&display=block" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inter|Sriracha" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/kk_logo.png') }}">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Filepond CSS -->
+    <link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css" rel="stylesheet" />
+    <link href="{{url_for('static', filename='css/style.css')}}" rel="stylesheet">
+    <meta name="csrf-token" content="{{ session.csrf_token }}">
+    <!-- socket.io js -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    {% block extra_css %} {% endblock %}
+</head>
+<body class="font-{{ session.get('font_size', 'medium') }} contrast-{{ session.get('contrast', 'normal') }}">
+    <!-- New Posts Button -->
+    <button id="newPostsBtn" class="btn btn-primary new-posts-btn" onclick="window.location.reload()">
+        <span class="material-symbols-outlined">arrow_upward</span> New posts available
+    </button>
+
+    <!-- Vertical Navbar (Left) -->
+    {% if session.get('user_id') %}
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+        {% include "includes/_navbar.html" %}
+    {% endif %}
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper {% block page_wrapper_class %}{% endblock %}">
+        <!-- Main Content (Center) -->
+        <div class="main-content">
+            {% block header %}
+                {% if session.get('user_id') %}
+                    {% include "includes/_header.html" %}
+                {% endif %}
+            {% endblock %}
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Right Sidebar -->
+        {% if session.get('user_id') and (not current_endpoint in ['forum.explore', 'explore']) %}
+            {% block sidebar %}
+            {% include "includes/_sidebar.html" %}
+            {% endblock %}
+        {% endif %}
+    </div>
+
+    <!-- Create Post Modal -->
+    {% if session.get('user_id') %}
+        {% include "includes/_post_modal.html" %}
+    {% endif %}
+
+    <!-- Floating Action Button for New Post (Mobile) -->
+    {% if session.get('user_id') %}
+    <button type="button" class="floating-new-post-btn" data-bs-toggle="modal" data-bs-target="#createPostModal">
+        <span class="material-symbols-outlined">edit_square</span>
+    </button>
+    {% endif %}
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>feather.replace()</script>
+    <!-- Filepond JS -->
+    <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-validate-size/dist/filepond-plugin-image-validate-size.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-crop/dist/filepond-plugin-image-crop.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-resize/dist/filepond-plugin-image-resize.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-transform/dist/filepond-plugin-image-transform.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.js"></script>
+    <!-- <script src="https://unpkg.com/doka@latest/lib/doka.min.js"></script> -->
+    <script src="https://unpkg.com/filepond@^4/dist/filepond.js"></script>
+    <script src="{{url_for('static', filename='js/filepond-components.js')}}"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Async Image Upload Logic
+        const postImageInput = document.getElementById('postImage');
+        const postImageUrlInput = document.getElementById('postImageUrl');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = uploadProgress.querySelector('.progress-bar');
+        const submitBtn = document.querySelector('form[action*="create_post"] button[type="submit"]');
+
+        if (postImageInput) {
+            postImageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // 1. Show Local Preview Immediately
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+
+                // 2. Start Async Upload
+                const formData = new FormData();
+                formData.append('post_image_upload', file);
+                
+                // Show progress, disable submit
+                uploadProgress.style.display = 'flex';
+                progressBar.style.width = '0%';
+                submitBtn.disabled = true;
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload/post-image', true);
+                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        // Success: Store the returned path in the hidden input
+                        // The server returns just the path string based on utils.py logic
+                        postImageUrlInput.value = xhr.responseText;
+                        progressBar.classList.remove('progress-bar-animated');
+                        progressBar.classList.add('bg-success');
+                        submitBtn.disabled = false; // Re-enable submit
+                    } else {
+                        alert('Image upload failed. Please try again.');
+                        removeImageBtn.click();
+                    }
+                };
+
+                xhr.onerror = function() {
+                    alert('Error uploading image.');
+                    removeImageBtn.click();
+                };
+
+                xhr.send(formData);
+            });
+
+            removeImageBtn.addEventListener('click', function() {
+                postImageInput.value = '';
+                postImageUrlInput.value = ''; // Clear the hidden path
+                imagePreview.src = '';
+                imagePreviewContainer.style.display = 'none';
+                uploadProgress.style.display = 'none';
+                progressBar.style.width = '0%';
+                progressBar.classList.add('progress-bar-animated');
+                progressBar.classList.remove('bg-success');
+                submitBtn.disabled = false;
+            });
+        }
+
+        // Prevent Double Submission
+        const createPostForm = document.querySelector('form[action*="create_post"]');
+        if (createPostForm) {
+            createPostForm.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                
+                // If already submitting, stop
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+
+                // Disable button and show loading state
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Posting...';
+                
+                // Optional: Re-enable after timeout in case of error (though page reload usually happens)
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 10000); 
+            });
+        }
+    </script>
+    <!-- Nav js -->
+    <script src="{{url_for('static', filename='js/navigation.js')}}"></script>
+    <!-- Other js -->
+    <script src="{{url_for('static', filename='js/script.js')}}"></script>
+    <script src="{{url_for('static', filename='js/real_time_search.js')}}"></script>
+    <script src="{{url_for('static', filename='js/post_functions.js')}}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

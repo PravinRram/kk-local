@@ -1,0 +1,66 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<div class="text-center py-5">
+    <!-- Confetti Icon Placeholder -->
+    <div class="mb-4">
+        <div style="font-size: 80px;">🎉</div>
+    </div>
+    
+    <h2 class="fw-bold mb-2">Event Created!</h2>
+    <p class="text-muted mb-4">Your event is ready to go.</p>
+    
+    {% if event_code %}
+    <div class="mb-4">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url_for('events.events_detail', event_code=event_code, _external=True) }}" 
+             alt="Event QR Code" 
+             class="img-fluid" 
+             style="border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+    </div>
+    {% endif %}
+
+    <div class="mb-4">
+        <h4 class="fw-bold" id="codeDisplay">
+            Event Code: {{ event_code if event_code else "Loading..." }}
+        </h4>
+    </div>
+    
+    <div class="mt-4">
+        <button onclick="goToDashboard()" class="btn ce-btn-next w-100 py-3 rounded-3" style="background: #D98C45; border-color: #D98C45;">Back to Dashboard</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const serverCode = "{{ event_code or '' }}";
+        // Hide the top back link for this page
+        const backLink = document.querySelector('.ce-header-link');
+        if (backLink) {
+            backLink.innerHTML = '<i class="bi bi-arrow-left"></i> Back to events';
+            // Override the click to just go home
+            backLink.onclick = (e) => {
+                e.preventDefault();
+                goToDashboard();
+            };
+        }
+
+        if (serverCode) {
+            document.getElementById('codeDisplay').textContent = "Event Code: " + serverCode;
+        } else {
+            const data = getEventData();
+            if (data && data.eventCode) {
+                document.getElementById('codeDisplay').textContent = "Event Code: " + data.eventCode;
+            } else {
+                document.getElementById('codeDisplay').textContent = "Event Code: Error";
+            }
+        }
+    });
+
+    function goToDashboard() {
+        localStorage.removeItem('kk_create_event_data');
+        window.location.href = "{{ url_for('events.events') }}";
+    }
+</script>
+{% endblock %}

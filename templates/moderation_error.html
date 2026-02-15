@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Content Blocked / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="modal fade show" id="moderationModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <span class="material-symbols-outlined">block</span> Content Blocked
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger mb-3">
+                    <span class="material-symbols-outlined">warning</span>
+                    <strong>Your content has been blocked by our automated moderation system.</strong>
+                </div>
+                <p><strong>Reason:</strong></p>
+                <p>{{ error_message }}</p>
+                <hr>
+                <p class="text-muted small mb-0">
+                    <span class="material-symbols-outlined">info</span>
+                    Please review our community guidelines and try again with appropriate content.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ return_url }}" class="btn btn-primary">
+                    <span class="material-symbols-outlined">arrow_back</span> Go Back
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-focus the modal
+    document.getElementById('moderationModal').focus();
+    
+    // Redirect when clicking outside modal
+    document.getElementById('moderationModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.location.href = '{{ return_url }}';
+        }
+    });
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.location.href = '{{ return_url }}';
+        }
+    });
+</script>
+{% endblock %}

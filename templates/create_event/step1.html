@@ -1,0 +1,75 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<div class="ce-progress-container">
+    <a href="{{ url_for('events.events_create_type') }}" class="ce-step-circle active">1</a>
+    <a href="{{ url_for('events.events_create_details') }}" class="ce-step-circle">2</a>
+    <a href="{{ url_for('events.events_create_image') }}" class="ce-step-circle">3</a>
+    <a href="{{ url_for('events.events_create_features') }}" class="ce-step-circle">4</a>
+    <a href="{{ url_for('events.events_create_review') }}" class="ce-step-circle">5</a>
+</div>
+
+<h2 class="ce-title">What type of event is this?</h2>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-danger mb-4">{{ messages[0] }}</div>
+  {% endif %}
+{% endwith %}
+
+<form method="post">
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-6">
+            <label class="ce-option-card" for="typePhysical">
+                <input type="radio" name="event_type" id="typePhysical" value="physical" class="d-none" onchange="checkSelection()">
+                <i class="bi bi-map ce-option-icon"></i>
+                <div>
+                    <div class="fw-bold">Physical Event</div>
+                    <div class="small text-muted">In-person gathering</div>
+                </div>
+            </label>
+        </div>
+        <div class="col-md-6">
+            <label class="ce-option-card" for="typeOnline">
+                <input type="radio" name="event_type" id="typeOnline" value="online" class="d-none" onchange="checkSelection()">
+                <i class="bi bi-globe ce-option-icon"></i>
+                <div>
+                    <div class="fw-bold">Online Event</div>
+                    <div class="small text-muted">Virtual meeting or webinar</div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="col-12 mt-4">
+            <button type="submit" class="btn ce-btn-next w-100" id="nextBtn" style="pointer-events: none; opacity: 0.6;">Next</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const selected = "{{ (new_event.event_type if new_event else '') }}";
+        if (selected === 'physical') document.getElementById('typePhysical').checked = true;
+        if (selected === 'online') document.getElementById('typeOnline').checked = true;
+        checkSelection();
+    });
+
+    function checkSelection() {
+        const physical = document.getElementById('typePhysical');
+        const online = document.getElementById('typeOnline');
+        const btn = document.getElementById('nextBtn');
+        
+        document.querySelectorAll('.ce-option-card').forEach(card => card.classList.remove('selected'));
+        if (physical.checked) physical.parentElement.classList.add('selected');
+        if (online.checked) online.parentElement.classList.add('selected');
+
+        if (physical.checked || online.checked) {
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+        }
+    }
+</script>
+{% endblock %}

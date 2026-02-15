@@ -1,0 +1,50 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<h2 class="ce-title">How do you want to create this event?</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="d-flex flex-column gap-3">
+            <div class="ce-option-card" id="option-ai" onclick="selectMethod('ai')">
+                <i class="bi bi-globe2 ce-option-icon"></i>
+                <h5 class="fw-bold">Build Event With AI</h5>
+            </div>
+            
+            <div class="ce-option-card selected" id="option-manual" onclick="selectMethod('manual')">
+                <i class="bi bi-gear-fill ce-option-icon text-kk-primary"></i>
+                <h5 class="fw-bold">Build manually</h5>
+            </div>
+            
+            <div class="mt-2">
+                <a href="{{ url_for('events.events_create_type') }}" class="btn ce-btn-next w-100" id="continueBtn">Continue</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Clear any previous event creation data when starting fresh
+    document.addEventListener('DOMContentLoaded', () => {
+        localStorage.removeItem('kk_create_event_data');
+    });
+
+    function selectMethod(method) {
+        // Reset selection visual
+        document.querySelectorAll('.ce-option-card').forEach(el => el.classList.remove('selected'));
+        
+        const continueBtn = document.getElementById('continueBtn');
+        
+        if (method === 'ai') {
+            document.getElementById('option-ai').classList.add('selected');
+            continueBtn.href = "{{ url_for('events.events_create_ai_agent') }}";
+        } else {
+            document.getElementById('option-manual').classList.add('selected');
+            continueBtn.href = "{{ url_for('events.events_create_type') }}";
+        }
+    }
+</script>
+{% endblock %}

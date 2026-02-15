@@ -1,0 +1,204 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+{% if not from_ai_agent %}
+<div class="ce-progress-container">
+    <a href="{{ url_for('events.events_create_type') }}" class="ce-step-circle">1</a>
+    <a href="{{ url_for('events.events_create_details') }}" class="ce-step-circle">2</a>
+    <a href="{{ url_for('events.events_create_image') }}" class="ce-step-circle">3</a>
+    <a href="{{ url_for('events.events_create_features') }}" class="ce-step-circle">4</a>
+    <a href="{{ url_for('events.events_create_review') }}" class="ce-step-circle active">5</a>
+</div>
+{% endif %}
+
+<h2 class="ce-title">Review & Confirm</h2>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-danger">{{ messages[0] }}</div>
+  {% endif %}
+{% endwith %}
+
+<div class="card p-4 mb-4" style="border-radius: 12px; border: 1px solid #ddd;">
+    <div class="ce-review-grid">
+        <div class="ce-review-label">Event Name</div>
+        <div class="ce-review-value">{{ new_event.event_name }}</div>
+        
+        <div class="ce-review-label">Date</div>
+        <div class="ce-review-value">
+            {{ new_event.start_date }}
+            {% if new_event.end_date and new_event.end_date != new_event.start_date %}
+                - {{ new_event.end_date }}
+            {% endif %}
+        </div>
+
+        <div class="ce-review-label">Time</div>
+        <div class="ce-review-value">{{ new_event.start_time }} - {{ new_event.end_time }} (Daily)</div>
+        
+        <div class="ce-review-label">Type</div>
+        <div class="ce-review-value">{{ new_event.event_type | title }}</div>
+        
+        <div class="ce-review-label">Venue</div>
+        <div class="ce-review-value">{{ new_event.location }}</div>
+        
+        <div class="ce-review-label">Visibility</div>
+        <div class="ce-review-value">
+            {{ new_event.visibility | title }}
+            {% if new_event.visibility == 'private' and new_event.private_code %}
+                (Code: {{ new_event.private_code }})
+            {% endif %}
+        </div>
+        
+        <div class="ce-review-label">Features</div>
+        <div class="ce-review-value">
+            {% set features = [] %}
+            {% if new_event.enable_group_chat %}{% set _ = features.append('Group Chat') %}{% endif %}
+            {% if new_event.enable_minigames %}{% set _ = features.append('Minigames') %}{% endif %}
+            {% if features %}
+                {{ features | join(', ') }}
+            {% else %}
+                None
+            {% endif %}
+        </div>
+
+        {% if new_event.image_source == 'upload' %}
+        <div class="ce-review-label">Image</div>
+        <div class="ce-review-value">Uploaded: {{ new_event.image_path }}</div>
+        {% elif new_event.image_source == 'ai' %}
+            {% if new_event.image_path and new_event.image_path.startswith('http') %}
+            <div class="ce-review-label">Selected Image</div>
+            <div class="ce-review-value">
+                <img src="{{ new_event.image_path }}" alt="Selected Event Image" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+            </div>
+            {% else %}
+            <div class="ce-review-label">AI Theme</div>
+            <div class="ce-review-value">{{ new_event.ai_theme }}</div>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    {% if ai_result and ai_result.score is defined %}
+    <div class="ce-ai-impact-box">
+        <h6 class="fw-bold mb-2">AI Impact Check for Intergen Interaction</h6>
+        <div class="small text-muted mb-2">
+            Overall: <span class="badge {% if ai_result.score >= 80 %}bg-success{% elif ai_result.score >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ ai_result.label }}</span> 
+            - {{ ai_result.short_label }} ({{ ai_result.score }}%)
+        </div>
+        
+        <ul class="mb-3 ps-3 small">
+            {% for reason in ai_result.reasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+        
+        {% if ai_result.changes %}
+        <div class="small fw-bold">Change these settings:</div>
+        <ul class="mb-3 ps-3 small">
+            {% for change in ai_result.changes %}
+            <li><strong>{{ change.field }}</strong> = {{ change.value }} ({{ change.explanation }})</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="d-flex gap-2 mt-3">
+             <!-- Ignore just hides the box for now -->
+             <button type="button" class="btn btn-sm fw-bold text-white" onclick="this.closest('.ce-ai-impact-box').style.display='none'" style="background-color: #F15A29; border: none;">Ignore Recommendations</button>
+             
+             {% if not from_ai_agent %}
+            <form action="{{ url_for('events.events_create_apply_ai') }}" method="POST" style="display:inline;">
+                <input type="hidden" name="changes" value='{{ ai_result.changes_json }}'>
+                <button type="submit" class="btn btn-sm fw-bold text-white" style="background-color: #F68D2E; border: none;">Apply Recommendations</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<form method="POST" action="{{ url_for('events.events_create_ai_commit', session_id=ai_session_id) if from_ai_agent else '' }}">
+    
+    <div class="mb-3">
+        <label class="form-label fw-bold text-secondary small text-uppercase">AI Suggested Tags (Editable)</label>
+        
+        <!-- Hidden input to store the actual comma-separated string -->
+        <input type="hidden" name="interest_tags" id="interestTagsInput" value="{{ suggested_tags }}">
+        
+        <div class="d-flex flex-wrap gap-2 mb-2" id="tagsContainer">
+            <!-- Tags will be rendered here by JS -->
+        </div>
+
+        <div class="input-group mb-2" style="max-width: 300px;">
+            <input type="text" class="form-control" id="newTagInput" placeholder="Add a tag..." aria-label="Add a tag">
+            <button class="btn btn-outline-secondary" type="button" id="addTagBtn">Add</button>
+        </div>
+
+        <div class="form-text">These tags help match your event to interested users. Click 'x' to remove, or add your own.</div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4 gap-3">
+        {% if from_ai_agent %}
+            <a href="{{ url_for('events.events_create_ai_session', session_id=ai_session_id) }}" class="btn ce-btn-back">Back to AI</a>
+        {% else %}
+            <button type="submit" name="action" value="back" class="btn ce-btn-back">Back</button>
+        {% endif %}
+        <div class="d-flex gap-2 flex-grow-1">
+            <button type="submit" name="action" value="create" class="btn ce-btn-next m-0 px-4 py-2 flex-grow-1">Confirm & Create Event</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tagsInput = document.getElementById('interestTagsInput');
+        const tagsContainer = document.getElementById('tagsContainer');
+        const newTagInput = document.getElementById('newTagInput');
+        const addTagBtn = document.getElementById('addTagBtn');
+
+        let tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
+
+        function renderTags() {
+            tagsContainer.innerHTML = '';
+            tags.forEach((tag, index) => {
+                const badge = document.createElement('div');
+                badge.className = 'badge bg-light text-dark border d-flex align-items-center gap-2 p-2';
+                badge.innerHTML = `
+                    <span class="fw-normal text-lowercase">${tag}</span>
+                    <button type="button" class="btn-close btn-close-dark" style="width: 0.5rem; height: 0.5rem;" aria-label="Remove" data-index="${index}"></button>
+                `;
+                tagsContainer.appendChild(badge);
+            });
+            tagsInput.value = tags.join(',');
+        }
+
+        tagsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-close')) {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                tags.splice(index, 1);
+                renderTags();
+            }
+        });
+
+        function addTag() {
+            const val = newTagInput.value.trim().toLowerCase();
+            if (val && !tags.includes(val)) {
+                tags.push(val);
+                renderTags();
+                newTagInput.value = '';
+            }
+        }
+
+        addTagBtn.addEventListener('click', addTag);
+        newTagInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addTag();
+            }
+        });
+
+        renderTags();
+    });
+</script>
+{% endblock %}
+

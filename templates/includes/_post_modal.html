@@ -1,0 +1,89 @@
+{% block extra_css %}
+<link href="{{url_for('static', filename='css/create_post_modal.css')}}" rel="stylesheet">
+{% endblock %}
+
+<form method="POST" action="{{ url_for('forum.create_post') }}">
+    <div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="new-post-modal-text-close">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="createPostModalLabel">New Post</h5>
+                    </div>
+                    <button type="submit" class="btn btn-info">Post</button>
+                </div>
+            
+                <div class="modal-body">
+                    <div class="post-content-wrapper">
+                        <img src="{{ session.get('profile_picture') }}" class="user-avatar-post" alt="Your avatar">
+
+                        <textarea class="form-control" id="postContent" name="content" rows="2" 
+                                placeholder="Share a story or experience you had!" maxlength="280" required></textarea>
+                    </div>
+                    <div class="char-counter">
+                        <span id="modalCharCount">0</span>/280
+                    </div>
+
+                    <div class="hashtag-section">
+                        <div class="section-title">Add hashtags</div>
+                        <div class="section-subtitle">Optional - Maximum 3 hashtags</div>
+
+                        <input type="text" class="form-control" id="postHashtags" name="hashtags"
+                                placeholder="#singapore, #events, #kampongkonek" maxlength="100">
+                    </div>
+
+                    <hr class="content-divider">
+
+                    <div class="location-section">
+                        <div class="section-title">Post to where?</div>
+                        <div class="section-subtitle">Choose a forum or your own profile to post to</div>
+
+                        <select class="form-select" id="postLocation" name="forum_id">
+                            <option value="">Your profile</option>
+                            {% if user_joined_forums %}
+                            <optgroup label="Your Forums">
+                                {% for forum in user_joined_forums %}
+                                    <option value="{{ forum.id }}">{{ forum.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="image-section">
+                        <div class="section-title">Add photos</div>
+                        <div class="section-subtitle">Optional - Maximum 1 per post</div>
+
+                        <input type="file" class="filepond-post" name="post_image_upload" />
+                        <input type="hidden" id="postImageUrl" name="image_url">
+                    </div>
+                </div>            
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    // Character counter for modal post
+    const modalTextarea = document.getElementById('postContent');
+    if (modalTextarea) {
+        const modalCharCount = document.getElementById('modalCharCount');
+        if (modalCharCount) {
+            modalTextarea.addEventListener('input', function() {
+                modalCharCount.textContent = this.value.length;
+            });
+        }
+    }
+
+    //Update dropdown to show selected option or default text
+    const postLocation = document.getElementById('postLocation');
+    if (postLocation) {
+        // Set default text when modal opens
+        document.getElementById('createPostModal').addEventListener('shown.bs.modal', function() {
+            if (!postLocation.value) {
+                postLocation.selectedIndex = 0;
+            }
+        });
+    }
+</script>

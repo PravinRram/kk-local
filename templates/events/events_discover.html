@@ -1,0 +1,344 @@
+{% extends "events/base.html" %}{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<style>
+  /* Force image and card body to share height equally */
+  .kk-event-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .kk-card-image {
+    flex: 1;
+    position: relative;
+    min-height: 200px; /* Minimum height to ensure visibility */
+    overflow: hidden;
+  }
+  .kk-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .kk-event-card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+</style>
+  <div class="kk-content-wrapper">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-3">
+      <h4 class="fw-bold mb-0">Discover Event</h4>
+      <div class="d-flex gap-2">
+        <form method="get" action="{{ url_for('events.events') }}" class="d-flex gap-2" id="filterForm">
+          <input type="hidden" name="q" value="{{ q|default('') }}">
+          <input type="hidden" name="start_date" id="customStartDate" value="{{ request.args.get('start_date', '') }}">
+          <input type="hidden" name="end_date" id="customEndDate" value="{{ request.args.get('end_date', '') }}">
+          
+          <div class="kk-filter dropdown">
+            <button class="btn btn-light border dropdown-toggle bg-white" type="button" id="dateFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" style="min-width: 140px; text-align: left;">
+              {% if date_filter == 'today' %}Today
+              {% elif date_filter == 'week' %}This week
+              {% elif date_filter == 'month' %}This month
+              {% elif date_filter == 'custom' %}Custom Date
+              {% else %}Any date{% endif %}
+            </button>
+            <input type="hidden" name="date" id="dateFilterInput" value="{{ date_filter }}">
+            
+            <div class="dropdown-menu p-0" aria-labelledby="dateFilterDropdown">
+              <!-- Main View -->
+              <div id="date-main-view">
+                <a class="dropdown-item py-2 {{ 'active' if date_filter == 'any' else '' }}" href="#" onclick="setDateFilter('any'); return false;">Any date</a>
+                <a class="dropdown-item py-2 {{ 'active' if date_filter == 'today' else '' }}" href="#" onclick="setDateFilter('today'); return false;">Today</a>
+                <a class="dropdown-item py-2 {{ 'active' if date_filter == 'week' else '' }}" href="#" onclick="setDateFilter('week'); return false;">This week</a>
+                <a class="dropdown-item py-2 {{ 'active' if date_filter == 'month' else '' }}" href="#" onclick="setDateFilter('month'); return false;">This month</a>
+                <div class="dropdown-divider my-0"></div>
+                <a class="dropdown-item py-2 d-flex justify-content-between align-items-center" href="#" onclick="showCustomDateView(event); return false;">
+                  Custom date range <i class="bi bi-chevron-right small"></i>
+                </a>
+              </div>
+
+              <!-- Custom Date View -->
+              <div id="date-custom-view" class="d-none" style="min-width: 320px;">
+                <div class="d-flex align-items-center border-bottom p-2">
+                  <button type="button" class="btn btn-link text-dark p-0 me-2" onclick="showMainDateView(event)"><i class="bi bi-arrow-left"></i></button>
+                  <span class="fw-bold">Custom date range</span>
+                </div>
+                <div class="p-2 text-center">
+                   <div id="flatpickr-inline-container"></div>
+                </div>
+                <div class="p-2 border-top">
+                   <button type="button" class="btn btn-primary w-100 rounded-pill" onclick="applyCustomDateDropdown()">Apply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="kk-filter dropdown">
+            <button class="btn btn-light border dropdown-toggle bg-white" type="button" id="typeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px; text-align: left;">
+              {% if type_filter == 'online' %}Online only
+              {% elif type_filter == 'physical' %}Physical only
+              {% else %}Online/Physical{% endif %}
+            </button>
+            <input type="hidden" name="type" id="typeFilterInput" value="{{ type_filter }}">
+            <div class="dropdown-menu" aria-labelledby="typeFilterDropdown">
+              <a class="dropdown-item {{ 'active' if type_filter == 'any' else '' }}" href="#" onclick="setTypeFilter('any'); return false;">Online/Physical</a>
+              <a class="dropdown-item {{ 'active' if type_filter == 'online' else '' }}" href="#" onclick="setTypeFilter('online'); return false;">Online only</a>
+              <a class="dropdown-item {{ 'active' if type_filter == 'physical' else '' }}" href="#" onclick="setTypeFilter('physical'); return false;">Physical only</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if events and events|length > 0 %}
+    <div class="row g-3">
+      {% for e in events %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card kk-event-card h-100 position-relative">
+            <div class="kk-card-image position-relative">
+              <img class="img-fluid rounded-top" src="{{ e.image_url if e.image_url else 'https://images.unsplash.com/photo-1521335629791-ce4aecadf3ff?w=800&q=80&auto=format&fit=crop' }}" alt="Event image">
+              
+              <div class="dropdown position-absolute top-0 end-0 m-2" style="z-index: 2;">
+                <button class="btn btn-light kk-card-menu rounded-circle kk-icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="https://calendar.google.com/calendar/render?action=TEMPLATE&text={{ e.title | urlencode }}&dates={{ e.start_date | replace('-','') }}T{{ e.start_time | replace(':','') }}00/{{ e.end_date | replace('-','') }}T{{ e.end_time | replace(':','') }}00&details={{ e.description | urlencode }}&location={{ e.location | urlencode }}" target="_blank">
+                            <i class="bi bi-calendar-plus me-2"></i>Add to Calendar
+                        </a>
+                    </li>
+                    {% if current_user.user_id == e.host_id %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="#" 
+                           data-edit-url="{{ url_for('events.events_edit', event_id=e.event_id) }}"
+                           data-event-name="{{ e.title }}"
+                           data-event-type="{{ e.type }}"
+                           data-event-visibility="{{ e.visibility }}"
+                           data-group-chat="{{ 'true' if e.enable_group_chat else 'false' }}"
+                           data-minigames="{{ 'true' if e.enable_minigames else 'false' }}"
+                           data-event-description="{{ e.description or '' }}"
+                           onclick="openEditEventModal(
+                               this.getAttribute('data-edit-url'),
+                               this.getAttribute('data-event-name'),
+                               this.getAttribute('data-event-type'),
+                               this.getAttribute('data-event-visibility'),
+                               this.getAttribute('data-group-chat') === 'true',
+                               this.getAttribute('data-minigames') === 'true',
+                               this.getAttribute('data-event-description')
+                           ); return false;">
+                            <i class="bi bi-pencil me-2"></i>Edit Event
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" 
+                           data-delete-url="{{ url_for('events.events_delete', event_id=e.event_id) }}"
+                           onclick="confirmDeleteEvent(this.getAttribute('data-delete-url')); return false;">
+                            <i class="bi bi-trash me-2"></i>Delete Event
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="small fw-bold text-dark">{{ e.date_line }}</div>
+              <h6 class="card-title mt-1">
+                {{ e.title }}
+              </h6>
+              <a href="{{ url_for('events.events_detail', event_code=e.event_code) }}" class="stretched-link"></a>
+              <div class="text-muted small">Type: {{ e.type }}, {{ e.visibility }}</div>
+              {% if e.location %}<div class="small text-truncate" title="{{ e.location }}">Venue: {{ e.location }}</div>{% endif %}
+              {% if e.display_date %}<div class="small">Date: {{ e.display_date }}</div>{% endif %}
+              {% if e.display_start_time %}<div class="small">Time: {{ e.display_start_time }}{% if e.display_end_time %} – {{ e.display_end_time }}{% endif %}</div>{% endif %}
+            </div>
+            <div class="card-footer bg-transparent" style="position: relative; z-index: 2;">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                  {% if e.user_status == 'going' %}
+                    {# Joined Button (Triggers Leave Modal) #}
+                    <button type="button" class="btn btn-success btn-sm"
+                            data-leave-url="{{ url_for('events.events_leave', event_id=e.event_id) }}"
+                            data-event-title="{{ e.title }}"
+                            onclick="confirmLeave(this.getAttribute('data-leave-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-check-circle-fill me-1"></i>Joined
+                    </button>
+                  {% else %}
+                    {# Join Button (Triggers Join Modal) #}
+                    <button type="button" class="btn btn-primary btn-sm" 
+                            data-join-url="{{ url_for('events.events_join', event_id=e.event_id) }}"
+                            data-event-title="{{ e.title }}"
+                            onclick="confirmJoin(this.getAttribute('data-join-url'), this.getAttribute('data-event-title'))">
+                      <i class="bi bi-plus-circle me-1"></i>Join
+                    </button>
+
+                    {# Interested Button #}
+                    {% if e.user_status == 'interested' %}
+                      <a href="{{ url_for('events.events_interested', event_id=e.event_id) }}" class="btn btn-warning btn-sm" title="Click to remove interest">
+                        <i class="bi bi-star-fill me-1"></i>Interested
+                      </a>
+                    {% else %}
+                      <a href="{{ url_for('events.events_interested', event_id=e.event_id) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-star me-1"></i>Interested
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn btn-outline-secondary btn-sm" 
+                          data-share-url="{{ url_for('events.events_detail', event_code=e.event_code) }}"
+                          onclick="openShareModal(this.getAttribute('data-share-url'))">
+                    <i class="bi bi-share"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="kk-empty p-5 text-center bg-white border rounded">
+        <h5 class="mb-2">No events found</h5>
+        <p class="text-muted mb-3">Try clearing filters or searching a different keyword.</p>
+        <a class="btn btn-secondary" href="{{ url_for('events.events') }}">Reset Filters</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Join Confirmation Modal -->
+  <div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Join</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to join <strong id="joinEventName"></strong>?</p>
+          <p class="text-muted small">Joining this event will also mark you as interested.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a href="#" id="confirmJoinBtn" class="btn btn-primary">Confirm & Join</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Confirmation Modal -->
+  <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Leave Event</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to leave <strong id="leaveEventName"></strong>?</p>
+          <p class="text-muted small">This will also remove it from your interests.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a href="#" id="confirmLeaveBtn" class="btn btn-danger">Leave Event</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script>
+    function confirmJoin(url, eventName) {
+      document.getElementById('joinEventName').textContent = eventName;
+      document.getElementById('confirmJoinBtn').href = url;
+      var myModal = new bootstrap.Modal(document.getElementById('joinModal'));
+      myModal.show();
+    }
+
+    function confirmLeave(url, eventName) {
+      document.getElementById('leaveEventName').textContent = eventName;
+      document.getElementById('confirmLeaveBtn').href = url;
+      var myModal = new bootstrap.Modal(document.getElementById('leaveModal'));
+      myModal.show();
+    }
+
+    // Date Filter Logic
+    let fpInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Flatpickr in the dropdown container
+        fpInstance = flatpickr("#flatpickr-inline-container", {
+            mode: "range",
+            inline: true,
+            dateFormat: "Y-m-d",
+            defaultDate: [
+                document.getElementById('customStartDate').value,
+                document.getElementById('customEndDate').value
+            ],
+            onChange: function(selectedDates, dateStr, instance) {
+                // Keep the calendar open/active
+            }
+        });
+        
+        // Prevent dropdown from closing when clicking inside custom view
+        const customView = document.getElementById('date-custom-view');
+        if(customView) {
+            customView.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+    });
+
+    function setTypeFilter(value) {
+        document.getElementById('typeFilterInput').value = value;
+        document.getElementById('filterForm').submit();
+    }
+
+    function setDateFilter(value) {
+        document.getElementById('dateFilterInput').value = value;
+        // clear custom dates if not custom
+        if(value !== 'custom') {
+            document.getElementById('customStartDate').value = '';
+            document.getElementById('customEndDate').value = '';
+        }
+        document.getElementById('filterForm').submit();
+    }
+
+    function showCustomDateView(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        document.getElementById('date-main-view').classList.add('d-none');
+        document.getElementById('date-custom-view').classList.remove('d-none');
+    }
+
+    function showMainDateView(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        document.getElementById('date-custom-view').classList.add('d-none');
+        document.getElementById('date-main-view').classList.remove('d-none');
+    }
+
+    function applyCustomDateDropdown() {
+        if (!fpInstance) return;
+        const selectedDates = fpInstance.selectedDates;
+        
+        if (selectedDates.length > 0) {
+            const start = fpInstance.formatDate(selectedDates[0], "Y-m-d");
+            const end = selectedDates.length > 1 
+                ? fpInstance.formatDate(selectedDates[1], "Y-m-d") 
+                : start;
+                
+            document.getElementById('customStartDate').value = start;
+            document.getElementById('customEndDate').value = end;
+            document.getElementById('dateFilterInput').value = 'custom';
+            document.getElementById('filterForm').submit();
+        }
+    }
+
+  </script>
+{% endblock %}

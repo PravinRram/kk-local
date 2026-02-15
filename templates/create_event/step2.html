@@ -1,0 +1,336 @@
+{% extends "create_event/layout.html" %}
+
+{% block content %}
+<div class="ce-progress-container">
+    <a href="{{ url_for('events.events_create_type') }}" class="ce-step-circle">1</a>
+    <a href="{{ url_for('events.events_create_details') }}" class="ce-step-circle active">2</a>
+    <a href="{{ url_for('events.events_create_image') }}" class="ce-step-circle">3</a>
+    <a href="{{ url_for('events.events_create_features') }}" class="ce-step-circle">4</a>
+    <a href="{{ url_for('events.events_create_review') }}" class="ce-step-circle">5</a>
+</div>
+
+<h2 class="ce-title text-start">Event Details</h2>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-danger mb-4">{{ messages[0] }}</div>
+  {% endif %}
+{% endwith %}
+
+<form id="detailsForm" method="post" action="{{ url_for('events.events_create_details') }}">
+    <div class="mb-3">
+        <label class="ce-form-label">Event Name</label>
+        <input type="text" id="eventName" name="event_name" class="form-control ce-form-control" placeholder="e.g. KampongKonek" required oninput="checkForm()" value="{{ new_event.event_name or '' }}">
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="ce-form-label">Start Date</label>
+            <input type="date" id="eventStartDate" name="start_date" class="form-control ce-form-control" required oninput="checkForm()" value="{{ new_event.start_date or '' }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="ce-form-label">End Date</label>
+            <input type="date" id="eventEndDate" name="end_date" class="form-control ce-form-control" required oninput="checkForm()" value="{{ new_event.end_date or '' }}">
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="ce-form-label">Daily Start Time</label>
+            <input type="time" id="eventStartTime" name="start_time" class="form-control ce-form-control" required oninput="checkForm()" value="{{ new_event.start_time or '' }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="ce-form-label">Daily End Time</label>
+            <input type="time" id="eventEndTime" name="end_time" class="form-control ce-form-control" required oninput="checkForm()" value="{{ new_event.end_time or '' }}">
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="ce-form-label">Location</label>
+        <div class="input-group">
+            <input type="text" id="eventLocation" name="location" class="form-control ce-form-control rounded-start" placeholder="e.g. Grand Hall, Level 2" required oninput="checkForm()" value="{{ new_event.location or '' }}">
+            <button class="btn btn-outline-secondary" type="button" id="openMapBtn" title="Pick from Map">
+                <i class="bi bi-geo-alt-fill"></i> Map
+            </button>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label class="ce-form-label">Description</label>
+        <textarea id="eventDesc" name="description" class="form-control ce-form-control" rows="4" placeholder="What is the event about?" required oninput="checkForm()">{{ new_event.description or '' }}</textarea>
+    </div>
+    
+    <div class="mb-4">
+        <label class="ce-form-label d-block">Visibility</label>
+        <div class="d-flex gap-3">
+            <label class="btn btn-outline-warning text-dark border-2 rounded-pill px-4 {% if new_event.visibility == 'private' %}active bg-warning bg-opacity-25{% endif %}" for="visPrivate">
+                <input type="radio" name="visibility" id="visPrivate" value="private" class="d-none" onchange="checkForm()" {% if new_event.visibility == 'private' %}checked{% endif %}>
+                Private (code/QR)
+            </label>
+            <label class="btn btn-outline-warning text-dark border-2 rounded-pill px-4 {% if new_event.visibility == 'public' %}active bg-warning bg-opacity-25{% endif %}" for="visPublic">
+                <input type="radio" name="visibility" id="visPublic" value="public" class="d-none" onchange="checkForm()" {% if new_event.visibility == 'public' %}checked{% endif %}>
+                Public (listed)
+            </label>
+        </div>
+    </div>
+    
+    <div class="d-flex gap-3 mt-5">
+        <a href="{{ url_for('events.events_create_type') }}" class="btn ce-btn-back">Back</a>
+        <button type="submit" class="btn ce-btn-next flex-grow-1" id="nextBtn" disabled>Next</button>
+    </div>
+</form>
+
+<!-- Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Pick Location</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0 position-relative">
+        <div id="map" style="height: 400px; width: 100%;"></div>
+        <div class="position-absolute top-0 start-0 p-3 w-100" style="z-index: 1000; pointer-events: none;">
+            <div class="input-group shadow-sm" style="pointer-events: auto;">
+                <input type="text" id="mapSearchInput" class="form-control" placeholder="Search places (e.g. Singapore 569830, Nanyang Polytechnic)">
+                <button class="btn btn-light border" type="button" id="mapSearchBtn"><i class="bi bi-search"></i></button>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <div class="text-muted small text-truncate me-3" id="selectedAddressDisplay" style="max-width: 60%;">No location selected</div>
+        <button type="button" class="btn btn-primary rounded-pill px-4" id="confirmLocationBtn" disabled>Confirm Location</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Validation Modal -->
+<div class="modal fade" id="validationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-body text-center p-4">
+        <div class="mb-3">
+          <i class="bi bi-exclamation-circle-fill text-danger" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="fw-bold mb-2">Invalid Event Details</h5>
+        <p class="text-muted mb-4" id="validationMessage">Please check your inputs.</p>
+        <button type="button" class="btn btn-secondary w-100 rounded-pill" data-bs-dismiss="modal">Okay, I'll fix it</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+    let map, marker;
+    let selectedAddress = "";
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Data is pre-filled by server-side session (Jinja2)
+        // Just run check to set button state and styles
+        checkForm();
+
+        // Initialize Map Modal Logic
+        const mapModalEl = document.getElementById('mapModal');
+        const openMapBtn = document.getElementById('openMapBtn');
+        const confirmLocationBtn = document.getElementById('confirmLocationBtn');
+        const eventLocationInput = document.getElementById('eventLocation');
+        const mapSearchBtn = document.getElementById('mapSearchBtn');
+        const mapSearchInput = document.getElementById('mapSearchInput');
+
+        openMapBtn.addEventListener('click', () => {
+            const mapModal = new bootstrap.Modal(mapModalEl);
+            mapModal.show();
+        });
+
+        // Initialize map when modal is shown (Leaflet requires visible container)
+        mapModalEl.addEventListener('shown.bs.modal', () => {
+            if (!map) {
+                // Default center: Singapore
+                map = L.map('map').setView([1.3521, 103.8198], 11);
+                
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+
+                // Map click handler
+                map.on('click', onMapClick);
+            } else {
+                map.invalidateSize(); // Fix gray map issue if re-opened
+            }
+        });
+
+        mapSearchBtn.addEventListener('click', searchLocation);
+        mapSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchLocation();
+        });
+
+        confirmLocationBtn.addEventListener('click', () => {
+            if (selectedAddress) {
+                eventLocationInput.value = selectedAddress;
+                checkForm(); // Re-validate form
+                // Close modal
+                const modalInstance = bootstrap.Modal.getInstance(mapModalEl);
+                modalInstance.hide();
+            }
+        });
+    });
+
+    function onMapClick(e) {
+        const { lat, lng } = e.latlng;
+        updateMarker(lat, lng);
+        reverseGeocode(lat, lng);
+    }
+
+    function updateMarker(lat, lng) {
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+        map.setView([lat, lng], 16); // Zoom in
+    }
+
+    async function searchLocation() {
+        const query = document.getElementById('mapSearchInput').value.trim();
+        if (!query) return;
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lon = parseFloat(data[0].lon);
+                updateMarker(lat, lon);
+                // Use display_name from search result directly or reverse geocode?
+                // Search result display_name is usually good.
+                selectedAddress = data[0].display_name;
+                updateSelectedAddressDisplay(selectedAddress);
+            } else {
+                alert('Location not found.');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            alert('Error searching location.');
+        }
+    }
+
+    async function reverseGeocode(lat, lng) {
+        updateSelectedAddressDisplay("Fetching address...");
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await response.json();
+            if (data && data.display_name) {
+                selectedAddress = data.display_name;
+                updateSelectedAddressDisplay(selectedAddress);
+            } else {
+                updateSelectedAddressDisplay("Address not found.");
+            }
+        } catch (error) {
+            console.error('Geocode error:', error);
+            updateSelectedAddressDisplay("Error fetching address.");
+        }
+    }
+
+    function updateSelectedAddressDisplay(text) {
+        document.getElementById('selectedAddressDisplay').textContent = text;
+        const confirmBtn = document.getElementById('confirmLocationBtn');
+        if (text && text !== "Fetching address..." && text !== "Error fetching address." && text !== "Address not found.") {
+            confirmBtn.disabled = false;
+        } else {
+            confirmBtn.disabled = true;
+        }
+    }
+
+    function checkForm() {
+        // Check all required inputs
+        const inputs = document.querySelectorAll('#detailsForm input[required], #detailsForm textarea[required]');
+        let allFilled = true;
+        inputs.forEach(input => {
+            if (!input.value) allFilled = false;
+        });
+        
+        // Check radio
+        const visPrivate = document.getElementById('visPrivate');
+        const visPublic = document.getElementById('visPublic');
+        if (!visPrivate.checked && !visPublic.checked) allFilled = false;
+        
+        // Update radio styles
+        if (visPrivate.checked) {
+            visPrivate.parentElement.classList.add('active', 'bg-warning', 'bg-opacity-25');
+            visPublic.parentElement.classList.remove('active', 'bg-warning', 'bg-opacity-25');
+        } else if (visPublic.checked) {
+            visPublic.parentElement.classList.add('active', 'bg-warning', 'bg-opacity-25');
+            visPrivate.parentElement.classList.remove('active', 'bg-warning', 'bg-opacity-25');
+        }
+
+        // Validate Date/Time Logic
+        const startDateInput = document.getElementById('eventStartDate');
+        const startTimeInput = document.getElementById('eventStartTime');
+        const endDateInput = document.getElementById('eventEndDate');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        // Reset styles
+        startDateInput.classList.remove('is-invalid');
+        startTimeInput.classList.remove('is-invalid');
+        endDateInput.classList.remove('is-invalid');
+        
+        let errorMessages = [];
+
+        // 1. Check if Start Date/Time is in the past
+        if (startDateInput.value && startTimeInput.value) {
+            const now = new Date();
+            const startDateTime = new Date(startDateInput.value + 'T' + startTimeInput.value);
+            
+            if (startDateTime < now) {
+                errorMessages.push("You cannot create an event in the past! Please check the start date and time.");
+                startDateInput.classList.add('is-invalid');
+                startTimeInput.classList.add('is-invalid');
+            }
+        }
+
+        // 2. Check if End Date is before Start Date
+        if (startDateInput.value && endDateInput.value) {
+            if (endDateInput.value < startDateInput.value) {
+                errorMessages.push("End date cannot be before the start date.");
+                endDateInput.classList.add('is-invalid');
+            }
+        }
+
+        // 3. Check if Daily End Time is before or equal to Daily Start Time
+        if (startTimeInput.value && document.getElementById('eventEndTime').value) {
+            const endTimeInput = document.getElementById('eventEndTime');
+            if (endTimeInput.value <= startTimeInput.value) {
+                errorMessages.push("Daily end time must be after daily start time.");
+                startTimeInput.classList.add('is-invalid');
+                endTimeInput.classList.add('is-invalid');
+            }
+        }
+
+        if (errorMessages.length > 0) {
+            // Override button click to show modal
+            nextBtn.onclick = (e) => {
+                e.preventDefault();
+                document.getElementById('validationMessage').innerHTML = errorMessages.join('<br>');
+                const modal = new bootstrap.Modal(document.getElementById('validationModal'));
+                modal.show();
+            };
+        } else {
+            // Restore normal submit behavior
+            nextBtn.onclick = null;
+        }
+
+        const btn = document.getElementById('nextBtn');
+        // Enable button if fields are filled (we handle the click prevention above for date validation)
+        btn.disabled = !allFilled;
+    }
+</script>
+{% endblock %}
+

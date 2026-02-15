@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ list_type }} / KampongKonek{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <span class="material-symbols-outlined">group</span> {{ list_type }}
+        </h2>
+        
+        {% if users %}
+            <div class="row">
+                {% for user in users %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ user.profile_picture }}" 
+                                     class="rounded-circle me-3" 
+                                     style="width: 60px; height: 60px; object-fit: cover;" 
+                                     alt="{{ user.username }}">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">
+                                        <a href="{{ url_for('auth.profile_public', username=user.username) }}" 
+                                           class="text-decoration-none">
+                                            {{ user.username }}
+                                        </a>
+                                    </h5>
+                                    <span class="age-badge">{{ user.age }} years</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                No {{ list_type.lower() }} yet.
+            </div>
+        {% endif %}
+        
+        <div class="mt-4">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                <span class="material-symbols-outlined">arrow_back</span> Back
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
