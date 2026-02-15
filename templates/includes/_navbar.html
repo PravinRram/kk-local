@@ -75,13 +75,7 @@
         
         <div class="dropdown dropup">
             <a href="#" class="account-button dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                {% if current_user.profile_picture_url or current_user.profile_picture %}
-                <img src="{{ avatar_url(current_user.profile_picture_url or current_user.profile_picture) }}" class="account-icon" id="actual-pfp">
-                {% else %}
-                <div class="account-icon">
-                    <span class="material-symbols-outlined">account_circle</span>
-                </div>
-                {% endif %}
+                <img src="{{ avatar_url(current_user.profile_picture_url or current_user.profile_picture) }}" class="account-icon" id="actual-pfp" alt="{{ current_user.username }}">
                 <div class="account-text">{{ session.get('username') }}</div>
             </a>
             <ul class="dropdown-menu">

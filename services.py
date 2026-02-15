@@ -41,7 +41,7 @@ class UserService:
             errors.append("Email already exists")
         return errors
     
-    def create(self, username, email, password, birthdate, interests, profile_picture='/static/images/default-avatar.png', bio=''):
+    def create(self, username, email, password, birthdate, interests, profile_picture='img/default_avatar.png', bio=''):
         password_hash = generate_password_hash(password)
         interests_json = json.dumps(interests) if interests else json.dumps([])
         user = User(
@@ -81,7 +81,7 @@ class UserService:
             else:
                 user.date_of_birth = birthdate
         if profile_picture is not None:
-            user.profile_picture = profile_picture if profile_picture.strip() else '/static/images/default-avatar.png'
+            user.profile_picture = profile_picture if profile_picture.strip() else 'img/default_avatar.png'
         if bio is not None:
             user.bio = bio
         if interests is not None:
@@ -182,7 +182,7 @@ class UserService:
     def _user_to_dict(self, user):
         profile_pic = user.profile_picture
         if not profile_pic or profile_pic.strip() == '':
-            profile_pic = '/static/images/default-avatar.png'
+            profile_pic = 'img/default_avatar.png'
         # Handle interests safely
         
         return {
@@ -450,7 +450,7 @@ class ForumService:
                 mod_dict = {
                     'id': mod.id,
                     'username': mod.username,
-                    'profile_picture': mod.profile_picture if mod.profile_picture and mod.profile_picture.strip() else '/static/images/default-avatar.png'
+                    'profile_picture': mod.profile_picture if mod.profile_picture and mod.profile_picture.strip() else 'img/default_avatar.png'
                 }
                 moderators.append(mod_dict)
             return moderators
@@ -496,7 +496,7 @@ class ForumService:
     def _forum_to_dict(self, forum):
         creator_profile_pic = forum.creator.profile_picture
         if not creator_profile_pic or creator_profile_pic.strip() == '':
-            creator_profile_pic = '/static/images/default-avatar.png'
+            creator_profile_pic = 'img/default_avatar.png'
 
         return {
             'id': forum.id,
@@ -510,7 +510,7 @@ class ForumService:
             'created_at': forum.created_at,
             'updated_at': forum.updated_at,
             'creator_username': forum.creator.username,
-            'creator_profile-picture': creator_profile_pic,
+            'creator_profile_picture': creator_profile_pic,
             'member_count': len(forum.members)
         }
 

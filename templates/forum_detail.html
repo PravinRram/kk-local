@@ -46,7 +46,7 @@
                     <div class="forum-header-right">
                         <div class="forum-creator-info">
                             <small class="text-muted">
-                                <img src="{{ forum.creator_profile_picture }}" 
+                                <img src="{{ avatar_url(forum.creator_profile_picture) }}" 
                                     class="user-avatar-small me-1" 
                                     alt="{{ forum.creator_username }}">
                                 Created by 
@@ -140,7 +140,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ moderator.profile_picture}}" 
+                                    <img src="{{ avatar_url(moderator.profile_picture) }}" 
                                         class="rounded-circle me-3" 
                                         style="width: 60px; height: 60px; object-fit: cover;" 
                                         alt="{{ moderator.username }}">

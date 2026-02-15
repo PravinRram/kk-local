@@ -120,16 +120,16 @@ def create_app(config_name="default"):
             # Handle case where joined_forums might be a property or relationship
             joined_forums = getattr(g.current_user, 'joined_forums', [])
             
-            # Simple suggestion logic (random for now, or based on hobbies)
-            import random
-            all_forums = Forum.query.filter(Forum.is_private == False).all()
-            if len(all_forums) >= 2:
-                suggested_forums = random.sample(all_forums, 2)
-            else:
-                suggested_forums = all_forums
+            # Get user interests and exclude joined forums
+            from services import ForumService
+            user_interests = [h.name for h in g.current_user.hobbies]
+            forum_service = ForumService(db.session)
+            suggested_forums = forum_service.get_recommended_forums(g.current_user.id, user_interests)
+            # Limit to 5 for the carousel
+            suggested_forums = suggested_forums[:5]
 
         def avatar_url(path):
-            if not path:
+            if not path or not path.strip():
                 return url_for("static", filename="img/default_avatar.png")
             if path.startswith("uploads/"):
                 filename = path.split("/", 1)[1] if "/" in path else path

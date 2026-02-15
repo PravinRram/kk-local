@@ -56,7 +56,7 @@
         </div>
 
         <!-- Right Sidebar -->
-        {% if session.get('user_id') and (not current_endpoint in ['forum.explore', 'explore']) %}
+        {% if session.get('user_id') %}
             {% block sidebar %}
             {% include "includes/_sidebar.html" %}
             {% endblock %}

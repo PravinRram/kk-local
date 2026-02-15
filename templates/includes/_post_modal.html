@@ -16,7 +16,7 @@
             
                 <div class="modal-body">
                     <div class="post-content-wrapper">
-                        <img src="{{ session.get('profile_picture') }}" class="user-avatar-post" alt="Your avatar">
+                        <img src="{{ avatar_url(current_user.profile_picture_url or current_user.profile_picture) }}" class="user-avatar-post" alt="Your avatar">
 
                         <textarea class="form-control" id="postContent" name="content" rows="2" 
                                 placeholder="Share a story or experience you had!" maxlength="280" required></textarea>

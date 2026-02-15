@@ -299,13 +299,13 @@ def create_forum():
         is_private = request.form.get('is_private') == 'on'
         interest_tags = request.form.getlist('interest_tags')
         
-        # Simple Image Upload Logic
-        banner_path = None
-        if 'banner' in request.files:
+        # Get banner from hidden input (FilePond pre-uploaded it)
+        banner_path = request.form.get('banner', '').strip()
+
+        # Fallback: if not pre-uploaded via FilePond, check for direct file upload
+        if not banner_path and 'banner' in request.files:
             file = request.files['banner']
             if file and file.filename != '':
-                # Uses the standard process_post_image from utils.py
-                # Saves to static/uploads/posts/
                 banner_path = process_post_image(file)
                 
                 if not banner_path:
@@ -373,6 +373,26 @@ def leave_forum(forum_id):
     forum_service.leave(forum_id, session['user_id'])
     flash('Left forum successfully', 'success')
     return redirect(url_for('forum.forums'))
+
+@forum_bp.route('/upload/forum-banner', methods=['POST'])
+@login_required
+def upload_forum_banner():
+    try:
+        file = None
+        if 'forum_banner_upload' in request.files:
+            file = request.files['forum_banner_upload']
+        
+        if not file or file.filename == '':
+            return jsonify({'error': 'No file provided'}), 400
+        
+        filepath = process_post_image(file)
+        if filepath:
+            # Return just the path string to match client expectation
+            return filepath, 200
+        else:
+            return jsonify({'error': 'Invalid file type'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @forum_bp.route('/upload/post-image', methods=['POST'])
 @login_required
