@@ -3,9 +3,47 @@
 {% endblock %}
 
 <div class="sidebar">
-    <!-- Real-time search -->
-    {% include "includes/_real_time_search.html" %}
-    
-    <!-- Forum Carousel -->
-    {% include "includes/_suggest_forum.html" %}
+    {% if current_endpoint != 'forum.explore' %}
+        <!-- Real-time search -->
+        {% include "includes/_real_time_search.html" %}
+        <!-- Forum Carousel -->
+        {% include "includes/_suggest_forum.html" %}
+    {% endif %}
+
+    <!-- List of forums joined -->
+    <div class="mt-4 joined-forums-sidebar">
+        <h5>Joined Forums</h5>
+
+        {% if user_joined_forums %}
+            <ul class="joined-forums-list">
+                {% for forum in user_joined_forums[:5] %}
+                <li>
+                    <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" class="joined-forum-item text-decoration-none">
+                        {% if forum.banner %}
+                            <img src="{{ forum.banner }}" class="forum-banner-small" alt="{{ forum.name }}">
+                        {% else %}
+                            <span class="forum-banner-small forum-banner-default"></span>
+                        {% endif %}
+                        {{ forum.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            {% if user_joined_forums|length > 5 %}
+            <a href="{{ url_for('forum.forums') }}" class="see-more-link">
+                See More <span class="material-symbols-outlined">arrow_forward</span>
+            </a>
+            {% endif %}
+
+        {% else %}
+            <div class="no-forums-card mt-3">
+                <span class="material-symbols-outlined no-forums-icon">forum</span>
+                <p class="no-forums-text">You haven't joined any forums yet.</p>
+                <a href="{{ url_for('forum.forums') }}" class="btn btn-sm btn-outline-primary w-100">
+                    <span class="material-symbols-outlined">explore</span> Explore Forums
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>

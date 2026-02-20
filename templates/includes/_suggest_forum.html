@@ -1,6 +1,6 @@
 {% if suggested_forums %}
 <div class="mt-4 carousel-wrapper">
-    <h6>Suggested Forums</h6>
+    <h5>Suggested Forums</h5>
     <div id="forumCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
         <div class="carousel-inner">
             {% for forum in suggested_forums %}
@@ -43,9 +43,9 @@
 </div>
 {% else %}
 <div class="mt-4">
-    <h6 class="mb-3">
+    <h5 class="mb-3">
         <span class="material-symbols-outlined">explore</span> Suggested Forums
-    </h6>
+    </h5>
     <div class="no-suggestions-card">
         <span class="material-symbols-outlined no-suggestions-icon">search_off</span>
         <p class="no-suggestions-text">No suggested forums at the moment.</p>

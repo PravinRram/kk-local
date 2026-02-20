@@ -45,7 +45,7 @@
 
                     <div class="forum-header-right">
                         <div class="forum-creator-info">
-                            <small class="text-muted">
+                            <p class="text-muted">
                                 <img src="{{ avatar_url(forum.creator_profile_picture) }}" 
                                     class="user-avatar-small me-1" 
                                     alt="{{ forum.creator_username }}">
@@ -53,7 +53,7 @@
                                 <a href="{{ url_for('auth.profile_public', username=forum.creator_username) }}">
                                     {{ forum.creator_username }}
                                 </a>
-                            </small>
+                            </p>
                         </div>
                             
                         <div class="forum-button">

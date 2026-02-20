@@ -245,3 +245,88 @@ body.contrast-high .no-suggestions-card {
 body.contrast-high .no-suggestions-text {
     color: white;
 }
+
+/* Joined Forums Sidebar */
+.joined-forums-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px 0;
+}
+
+.joined-forums-list li {
+    padding: 6px 0;
+}
+
+.joined-forum-item {
+    color: var(--text-color);
+    font-size: 1em;
+    font-weight: 500;
+    display: block;
+    transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.joined-forum-item:hover {
+    color: var(--primary-color);
+}
+
+.see-more-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary-color);
+    font-size: 0.95em;
+    font-weight: 500;
+    text-decoration: none;
+    margin-top: 4px;
+}
+
+.see-more-link:hover {
+    opacity: 0.75;
+}
+
+.see-more-link .material-symbols-outlined {
+    font-size: 1.1rem;
+}
+
+/* No forums card */
+.no-forums-card {
+    background-color: var(--bg-color);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 15px;
+    text-align: center;
+}
+
+.no-forums-icon {
+    font-size: 2.5rem;
+    color: var(--lighter-text-color);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.no-forums-text {
+    color: var(--lighter-text-color);
+    margin-bottom: 12px;
+    font-size: 0.9em;
+}
+
+/* High contrast */
+body.contrast-high .joined-forums-sidebar {
+    border-color: white;
+}
+
+body.contrast-high .joined-forum-item {
+    color: white;
+}
+
+body.contrast-high .no-forums-card {
+    border-color: white;
+}
+
+body.contrast-high .no-forums-text,
+body.contrast-high .no-forums-icon {
+    color: white;
+}
