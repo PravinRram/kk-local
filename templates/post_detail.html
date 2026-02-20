@@ -5,13 +5,14 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <a href="javascript:history.back()" class="btn mb-3">
-            <span class="material-symbols-outlined">arrow_back</span> Back
-        </a>
-        
+                
         <!-- Post -->
         <div class="post-card">
             <div class="d-flex">
+                <a href="javascript:history.back()" class="btn">
+                    <span class="material-symbols-outlined m-0">arrow_back</span>
+                </a>
+
                 <img src="{{ avatar_url(post.profile_picture) }}" 
                      class="user-avatar me-3" alt="{{ post.username }}">
                 <div class="flex-grow-1">
@@ -259,27 +260,27 @@
     document.querySelector('textarea[name="content"]').addEventListener('input', function() {
         document.getElementById('commentCharCount').textContent = this.value.length;
     });
-
-    function likePost(postId) {
-        fetch(`/post/${postId}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            }
-        });
-    }
-
-    function copyShareLink() {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Link copied to clipboard!');
-        });
-    }
 </script>
 {% endblock %}
+
+<!-- function likePost(postId) {
+    fetch(`/post/${postId}/like`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function copyShareLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+    });
+} -->

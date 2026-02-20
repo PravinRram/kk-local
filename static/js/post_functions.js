@@ -1,9 +1,12 @@
 // Like post function
 function likePost(postId) {
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    
     fetch(`/forum/post/${postId}/like`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         }
     })
     .then(response => response.json())

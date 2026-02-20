@@ -5,44 +5,50 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h2 class="mb-4">
-            <span class="material-symbols-outlined">search</span> Search Results
+        <h3 class="mb-4 align-items-center">
+            <a href="{{ url_for('forum.forums') }}" class="btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <span class="material-symbols-outlined">search</span>Search Results
             {% if query %}
             for "{{ query }}"
             {% endif %}
-        </h2>
-        
-        <a href="{{ url_for('forum.forums') }}" class="btn btn-outline-secondary mb-4">
-            <span class="material-symbols-outlined">arrow_back</span> Back to Forums
-        </a>
+        </h3>
         
         {% if forums %}
             <p class="text-muted mb-3">Found {{ forums|length }} forum(s)</p>
             <div class="row">
                 {% for forum in forums %}
                 <div class="col-md-6 mb-3">
-                    <div class="forum-card">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="mb-0">
-                                <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
-                                   class="text-decoration-none">
-                                    {{ forum.name }}
-                                </a>
-                            </h5>
-                            {% if forum.is_private %}
-                            <span class="badge bg-warning">
-                                <span class="material-symbols-outlined">lock</span> Private
-                            </span>
-                            {% endif %}
-                        </div>
-                        <p class="text-muted mb-2">{{ forum.description[:100] }}{% if forum.description|length > 100 %}...{% endif %}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
-                            </small>
-                            <small class="text-muted">
-                                By {{ forum.creator_username }}
-                            </small>
+                    <div class="forum-card" style="padding: 0; overflow: hidden;">
+                        {% if forum.banner %}
+                        <img src="{{ forum.banner }}" alt="{{ forum.name }}" style="width: 100%; height: 100px; object-fit: cover;">
+                        {% else %}
+                        <div style="width: 100%; height: 100px; background: var(--kk-gradient);"></div>
+                        {% endif %}
+                        <div style="padding: 15px;">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="mb-0">
+                                    <a href="{{ url_for('forum.forum_detail', forum_id=forum.id) }}" 
+                                    class="text-decoration-none">
+                                        {{ forum.name }}
+                                    </a>
+                                </h5>
+                                {% if forum.is_private %}
+                                <span class="badge bg-warning">
+                                    <span class="material-symbols-outlined">lock</span> Private
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted mb-2">{{ forum.description[:100] }}{% if forum.description|length > 100 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members
+                                </small>
+                                <small class="text-muted">
+                                    By {{ forum.creator_username }}
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>

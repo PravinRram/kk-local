@@ -8,10 +8,12 @@
         {% include "includes/_real_time_search.html" %}
         <!-- Forum Carousel -->
         {% include "includes/_suggest_forum.html" %}
+
+        <div class="mt-4"></div>
     {% endif %}
 
     <!-- List of forums joined -->
-    <div class="mt-4 joined-forums-sidebar">
+    <div class="joined-forums-sidebar">
         <h5>Joined Forums</h5>
 
         {% if user_joined_forums %}
