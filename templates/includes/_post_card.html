@@ -110,14 +110,14 @@
                         {% if post.original_post %}
                         <!-- Original Post Preview -->
                         <div class="d-flex mb-2">
-                            <img src="{{ post.original_post.profile_picture }}" 
+                            <img src="{{ avatar_url(post.original_post.profile_picture) }}" 
                                 class="rounded-circle me-2" 
                                 style="width: 40px; height: 40px; object-fit: cover;" 
                                 alt="{{ post.original_post.username }}">
                             <div class="flex-grow-1">
                                 <div>
-                                    <a href="{{ url_for('profile', user_id=post.original_post.user_id) }}" 
-                                    class="text-decoration-none">
+                                    <a href="{{ url_for('auth.profile_public', username=post.original_post.username) }}" 
+                                        class="text-decoration-none">
                                         <strong>{{ post.original_post.username }}</strong>
                                     </a>
                                     <span class="age-badge ms-2">{{ post.original_post.age }} years</span>
@@ -148,7 +148,7 @@
                         </div>
                         {% endif %}
                         
-                        <a href="{{ url_for('post_detail', post_id=post.original_post_id) }}" 
+                        <a href="{{ url_for('forum.post_detail', post_id=post.original_post_id) }}" 
                         class="btn btn-sm btn-outline-secondary">
                             <span class="material-symbols-outlined">visibility</span> View Original Post
                         </a>
@@ -168,7 +168,7 @@
     <!-- Post Actions -->
     <div class="post-actions d-flex gap-3 border-top pt-2">
         <!-- Like Button -->
-        <button class="btn btn-sm like-btn" data-post-id="{{ post.id }}" onclick="likePost({{ post.id }})">
+        <button class="btn btn-sm like-btn" data-post-id="{{ post.id }}" onclick="event.preventDefault(); likePost({{ post.id }})">
             <span class="material-symbols-outlined {% if post.is_liked %}filled{% endif %}">favorite</span>
             <span>{{ post.likes_count }}</span>
         </button>

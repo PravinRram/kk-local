@@ -3,6 +3,7 @@
 {% endblock %}
 
 <form method="POST" action="{{ url_for('forum.create_post') }}">
+    {{ csrf_token() }}
     <div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">

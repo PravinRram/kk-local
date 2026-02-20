@@ -1,6 +1,6 @@
 // Like post function
 function likePost(postId) {
-    fetch(`/post/${postId}/like`, {
+    fetch(`/forum/post/${postId}/like`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

@@ -29,61 +29,6 @@
       </div>
     </div>
   </section>
-  <!-- Privacy Settings -->
-  <div class="card">
-      <div class="card-header">
-          <h5 class="mb-0">
-              <span class="material-symbols-outlined">shield</span> Privacy
-          </h5>
-      </div>
-      <div class="card-body">
-          <form method="POST" action="{{ url_for('auth.settings') }}">
-              <div class="mb-3">
-                  <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="show_age" name="show_age" checked>
-                      <label class="form-check-label" for="show_age">
-                          Show my age on profile
-                      </label>
-                  </div>
-                  <div class="form-text">Control whether your age is visible to other users</div>
-              </div>
-              
-              <div class="mb-3">
-                  <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="show_posts" name="show_posts" checked>
-                      <label class="form-check-label" for="show_posts">
-                          Show my posts on my profile
-                      </label>
-                  </div>
-                  <div class="form-text">Make your post history visible on your profile</div>
-              </div>
-              
-              <div class="mb-3">
-                  <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="allow_friend_requests" name="allow_friend_requests" checked>
-                      <label class="form-check-label" for="allow_friend_requests">
-                          Allow friend requests
-                      </label>
-                  </div>
-                  <div class="form-text">Let other users send you friend requests</div>
-              </div>
-              
-              <div class="mb-3">
-                  <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="allow_messages" name="allow_messages" checked>
-                      <label class="form-check-label" for="allow_messages">
-                          Allow direct messages
-                      </label>
-                  </div>
-                  <div class="form-text">Enable or disable direct messaging (when feature is available)</div>
-              </div>
-              
-              <button type="submit" class="btn btn-primary">
-                  <span class="material-symbols-outlined">save</span> Save Privacy Settings
-              </button>
-          </form>
-      </div>
-  </div>
   
   <!-- Notification Settings -->
   <div class="card">
@@ -138,19 +83,6 @@
                       </label>
                   </div>
               </div>
-              
-              <div class="mb-3">
-                  <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="notify_friend_requests" name="notify_friend_requests" checked>
-                      <label class="form-check-label" for="notify_friend_requests">
-                          Notify me about friend requests
-                      </label>
-                  </div>
-              </div>
-              
-              <button type="submit" class="btn btn-primary">
-                  <span class="material-symbols-outlined">save</span> Save Notification Settings
-              </button>
           </form>
       </div>
   </div>

@@ -7,6 +7,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('forum.repost', post_id=post.id) }}">
+                {{ csrf_token() }}
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Add a comment (optional)</label>

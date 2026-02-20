@@ -487,4 +487,4 @@ project_root = os.path.dirname(__file__)
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, port=6000)
+    socketio.run(app, debug=True, port=5000)
