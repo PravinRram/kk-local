@@ -274,6 +274,7 @@ def forum_detail(forum_id):
     is_member = forum_service.is_member(forum_id, session['user_id'])
     is_moderator = forum_service.is_moderator(forum_id, session['user_id'])
     is_banned = ban_service.is_banned(session['user_id'], forum_id)
+    is_owner = forum['creator_id'] == session['user_id']
     
     posts = post_service.get_by_forum(forum_id)
     for post in posts:
@@ -284,7 +285,7 @@ def forum_detail(forum_id):
     forum['moderators'] = forum_service.get_moderators(forum_id)
     
     return render_template('forum_detail.html', forum=forum, posts=posts,
-                            is_member=is_member, is_moderator=is_moderator, is_banned=is_banned)
+                            is_member=is_member, is_moderator=is_moderator, is_banned=is_banned, is_owner=is_owner)
 
 @forum_bp.route('/forum/create', methods=['GET', 'POST'])
 @login_required
@@ -372,6 +373,77 @@ def leave_forum(forum_id):
     
     forum_service.leave(forum_id, session['user_id'])
     flash('Left forum successfully', 'success')
+    return redirect(url_for('forum.forums'))
+
+@forum_bp.route('/forum/<int:forum_id>/update', methods=['POST'])
+@login_required
+def update_forum(forum_id):
+    sess = db.session
+    forum_service = ForumService(sess)
+    
+    forum = forum_service.get_by_id(forum_id)
+    if not forum or forum['creator_id'] != session['user_id']:
+        flash('You do not have permission to edit this forum', 'error')
+        return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+    
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    rules = request.form.get('rules', '').strip()
+    is_private = request.form.get('is_private') == 'on'
+    interest_tags = request.form.getlist('interest_tags')
+    banner_path = request.form.get('banner', '').strip()
+    
+    if not banner_path and 'banner' in request.files:
+        file = request.files['banner']
+        if file and file.filename != '':
+            banner_path = process_post_image(file)
+    
+    # Use existing banner if none provided
+    if not banner_path:
+        banner_path = forum['banner']
+    
+    errors = forum_service.validate_forum(name, description, session['user_id'], editing=True, current_forum_id=forum_id)
+    
+    if errors:
+        for error in errors:
+            flash(error, 'error')
+        return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+    
+    forum_service.update(forum_id, name, description, rules, is_private, interest_tags, banner_path)
+    flash('Forum updated successfully', 'success')
+    return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+
+@forum_bp.route('/forum/<int:forum_id>/moderators/update', methods=['POST'])
+@login_required
+def update_moderators(forum_id):
+    sess = db.session
+    forum_service = ForumService(sess)
+    
+    forum = forum_service.get_by_id(forum_id)
+    if not forum or forum['creator_id'] != session['user_id']:
+        flash('You do not have permission to manage moderators', 'error')
+        return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+    
+    moderator_ids_str = request.form.get('moderator_ids', '')
+    moderator_ids = [int(x) for x in moderator_ids_str.split(',') if x.strip().isdigit()]
+    
+    forum_service.update_moderators(forum_id, session['user_id'], moderator_ids)
+    flash('Moderators updated successfully', 'success')
+    return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+
+@forum_bp.route('/forum/<int:forum_id>/delete', methods=['POST'])
+@login_required
+def delete_forum(forum_id):
+    sess = db.session
+    forum_service = ForumService(sess)
+    
+    forum = forum_service.get_by_id(forum_id)
+    if not forum or forum['creator_id'] != session['user_id']:
+        flash('You do not have permission to delete this forum', 'error')
+        return redirect(url_for('forum.forum_detail', forum_id=forum_id))
+    
+    forum_service.delete(forum_id)
+    flash('Forum deleted successfully', 'success')
     return redirect(url_for('forum.forums'))
 
 @forum_bp.route('/upload/forum-banner', methods=['POST'])

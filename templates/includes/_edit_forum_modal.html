@@ -1,0 +1,78 @@
+<!-- edit forum modal -->
+<form method="POST" action="{{ url_for('forum.update_forum', forum_id=forum.id) }}" enctype="multipart/form-data">
+    {{ csrf_token() }}
+    <div class="modal fade" id="editForumModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Forum Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Forum Name</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" 
+                            value="{{ forum.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" 
+                                rows="3" required>{{ forum.description }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_rules" class="form-label">Forum Rules (Optional)</label>
+                        <textarea class="form-control" id="edit_rules" name="rules" 
+                                rows="5" placeholder="1. Be respectful...">{{ forum.rules }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="forum_banner" class="form-label">Forum Banner</label>
+                        {% if forum.banner %}
+                        <img src="{{ forum.banner }}" class="img-fluid mb-2" style="max-height: 150px;">
+                        {% endif %}
+                        <input type="file" class="filepond-forum-banner" name="forum_banner_upload" />
+                        <input type="hidden" id="forum_banner" name="banner">
+                        <div class="form-text">Upload a banner image (recommended: 1200x300px)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Interest Tags (Max 7)</label>
+                        <div class="row">
+                            {% set all_tags = ['Gaming', 'Technology', 'Sports', 'Music', 'Art', 'Food', 'Travel', 
+                                            'Fitness', 'Movies', 'Books', 'Fashion', 'Science', 'Business', 
+                                            'Education', 'Politics', 'Comedy', 'Photography', 'Nature', 'Pets', 'Other'] %}
+                            {% for tag in all_tags %}
+                            <div class="col-6 col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input interest-tag-checkbox" type="checkbox" 
+                                        name="interest_tags" value="{{ tag }}" id="edit_tag_{{ loop.index }}"
+                                        {% if tag in forum.interest_tags %}checked{% endif %}>
+                                    <label class="form-check-label" for="edit_tag_{{ loop.index }}">{{ tag }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_private" 
+                                id="edit_is_private" {% if forum.is_private %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_is_private">
+                                <strong>Make this forum private</strong>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined">save</span> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

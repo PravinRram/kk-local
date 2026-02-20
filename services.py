@@ -493,6 +493,76 @@ class ForumService:
             forums = q.order_by(desc(Forum.updated_at)).all()
         return [self._forum_to_dict(f) for f in forums[:50]]
     
+    def update(self, forum_id, name, description, rules, is_private, interest_tags, banner):
+        forum = self.session.query(Forum).filter_by(id=forum_id).first()
+        if forum:
+            forum.name = name
+            forum.description = description
+            forum.rules = rules
+            forum.is_private = is_private
+            forum.interest_tags = json.dumps(interest_tags) if interest_tags else json.dumps([])
+            forum.banner = banner
+            self.session.commit()
+            return True
+        return False
+
+    def update_moderators(self, forum_id, creator_id, moderator_ids):
+        forum = self.session.query(Forum).filter_by(id=forum_id).first()
+        if forum:
+            # Clear existing moderators except creator
+            creator = self.session.query(User).filter_by(id=creator_id).first()
+            forum.moderators = [creator] if creator else []
+            
+            # Add new moderators
+            for mod_id in moderator_ids:
+                if mod_id != creator_id:
+                    moderator = self.session.query(User).filter_by(id=mod_id).first()
+                    if moderator and moderator not in forum.moderators:
+                        forum.moderators.append(moderator)
+                        if moderator not in forum.members:
+                            forum.members.append(moderator)
+            
+            self.session.commit()
+            return True
+        return False
+
+    def delete(self, forum_id):
+        forum = self.session.query(Forum).filter_by(id=forum_id).first()
+        if forum:
+            self.session.delete(forum)
+            self.session.commit()
+            return True
+        return False
+
+    def validate_forum(self, name, description, user_id, editing=False, current_forum_id=None):
+        errors = []
+        if not name or len(name) < 3:
+            errors.append("Forum name must be at least 3 characters")
+        if not description or len(description) < 10:
+            errors.append("Description must be at least 10 characters")
+        
+        # Check for duplicate name only if name changed
+        existing = self.session.query(Forum).filter_by(name=name).first()
+        if existing and (not editing or existing.id != current_forum_id):
+            errors.append("Forum name already exists")
+        
+        # Only check account age and forum count when creating, not editing
+        if not editing:
+            user = self.session.query(User).filter_by(id=user_id).first()
+            if user:
+                created_at = user.created_at
+                if created_at.tzinfo is None:
+                    created_at = SGT.localize(created_at)
+                account_age = get_sgt_now() - created_at
+                if account_age.seconds < 7: 
+                    errors.append("Account must be at least 7 days old to create a forum")
+            
+            forum_count = self.session.query(Forum).filter_by(creator_id=user_id).count()
+            if forum_count >= 5:
+                errors.append("Maximum 5 forums per account")
+        
+        return errors
+    
     def _forum_to_dict(self, forum):
         creator_profile_pic = forum.creator.profile_picture
         if not creator_profile_pic or creator_profile_pic.strip() == '':

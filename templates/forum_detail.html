@@ -61,6 +61,31 @@
                             <div class="alert alert-danger mb-0">
                                 <span class="material-symbols-outlined">block</span> You are banned from this forum
                             </div>
+                            {% elif is_owner %}
+                            <!-- Owner Management Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <span class="material-symbols-outlined">settings</span> Manage Forum
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editForumModal">
+                                            <span class="material-symbols-outlined">edit</span> Edit Details
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageModeratorsModal">
+                                            <span class="material-symbols-outlined">shield</span> Manage Moderators
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteForumModal">
+                                            <span class="material-symbols-outlined">delete</span> Delete Forum
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                             {% elif is_member %}
                             <form method="POST" action="{{ url_for('forum.leave_forum', forum_id=forum.id) }}">
                                 {{ csrf_token() }}
@@ -80,7 +105,11 @@
                     </div>
                 </div>
                 
-                {% if is_moderator %}
+                {% if is_owner %}
+                <div class="alert alert-info mb-0">
+                    <span class="material-symbols-outlined">crown</span> You are the owner of this forum
+                </div>
+                {% elif is_moderator %}
                 <div class="alert alert-info mb-0">
                     <span class="material-symbols-outlined">shield</span> You are a moderator of this forum
                 </div>
@@ -174,6 +203,12 @@
         </div>
     </div>
 </div>
+
+{% if is_owner %}
+{% include 'includes/_edit_forum_modal.html' %}
+{% include 'includes/_manage_mod_modal.html' %}
+{% include 'includes/_delete_forum_modal.html' %}
+{% endif %}
 
 {% block extra_js %}
 <script>
