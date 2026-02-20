@@ -263,7 +263,7 @@ function displayModeratorResults(users) {
                      style="width: 40px; height: 40px; object-fit: cover;">
                 <div>
                     <strong>${user.username}</strong>
-                    <span class="age-badge ms-1">${user.age} years</span>
+                    <span class="age-badge ms-1">${user.age_group ? user.age_group.charAt(0).toUpperCase() + user.age_group.slice(1) : user.age + ' years'}</span>
                 </div>
             </div>
         `;

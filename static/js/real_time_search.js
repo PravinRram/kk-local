@@ -75,7 +75,7 @@ function displaySearchResults(results) {
                         <img src="${user.profile_picture}" class="user-avatar-small me-2">
                         <div>
                             <strong>${user.username}</strong>
-                            <span class="age-badge ms-1">${user.age} years</span>
+                            <span class="age-badge ms-1">${user.age_group ? user.age_group.charAt(0).toUpperCase() + user.age_group.slice(1) : user.age + ' years'}</span>
                         </div>
                     </div>
                 </div>

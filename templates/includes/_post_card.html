@@ -88,7 +88,7 @@
                             <div class="modal-content bg-transparent border-0">
                                 <div class="modal-body p-0 position-relative">
                                     <button type="button" class="btn-close btn-close-white image-modal-close position-absolute top-0 m-3" 
-                                            data-bs-dismiss="modal"></button>
+                                        data-bs-dismiss="modal" aria-label="Close"></button>
                                     <img src="{{ post.image_url }}" class="img-fluid w-100" alt="Post image">
                                 </div>
                             </div>
@@ -206,3 +206,17 @@
 {% include "includes/_repost_modal.html" %}
 
 {% include "includes/_delete_modal.html" %}
+
+<script>
+// Return focus to trigger element when image modal closes, avoiding aria-hidden warning
+(function() {
+    if (window._imageModalFocusHandlerAdded) return;
+    window._imageModalFocusHandlerAdded = true;
+    document.addEventListener('hide.bs.modal', function(e) {
+        if (e.target && e.target.id && e.target.id.startsWith('imageModal')) {
+            const trigger = document.querySelector('[data-bs-target="#' + e.target.id + '"]');
+            if (trigger) trigger.focus();
+        }
+    });
+})();
+</script>

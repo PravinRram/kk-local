@@ -2,30 +2,83 @@
 <div class="modal fade" id="repostModal{{ post.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Repost</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ url_for('forum.repost', post_id=post.id) }}">
-                {{ csrf_token() }}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Add a comment (optional)</label>
-                        <textarea class="form-control" name="quote_content" rows="3" 
-                                  maxlength="280" placeholder="Add your thoughts..."></textarea>
-                    </div>
-                    <div class="border-start border-3 border-secondary ps-3">
-                        <strong>{{ post.username }}</strong>
-                        <p class="mb-0">{{ post.content }}</p>
-                    </div>
+            <div class="modal-header" style="border-bottom: 1px solid var(--lighter-text-color); padding: 1rem 1.5rem; justify-content: space-between;">
+                <div style="gap: 0.5rem; display: flex; flex-direction: row; align-items: center;">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title mb-0" style="font-size: 1.25rem; font-weight: 600;">Repost</h5>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">
-                        <span class="material-symbols-outlined">repeat</span> Repost
-                    </button>
+                <button type="submit" form="repostForm{{ post.id }}" class="btn btn-info">Repost</button>
+            </div>
+
+            <form method="POST" action="{{ url_for('forum.repost', post_id=post.id) }}" id="repostForm{{ post.id }}">
+                {{ csrf_token() }}
+                <div class="modal-body" style="padding: 1.5rem;">
+
+                    <!-- User avatar + textarea -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                        <img src="{{ avatar_url(current_user.profile_picture_url or current_user.profile_picture) }}"
+                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
+                             alt="Your avatar">
+                        <textarea name="quote_content"
+                                  id="repostQuote{{ post.id }}"
+                                  rows="2"
+                                  maxlength="280"
+                                  placeholder="Add your thoughts..."
+                                  style="border: none; border-radius: 0; padding: 0; font-size: 1.1rem; resize: none; box-shadow: none !important; outline: none !important; background: transparent; width: 100%;"></textarea>
+                    </div>
+
+                    <!-- Char counter -->
+                    <div style="font-size: 0.85rem; color: #999; text-align: right; margin-bottom: 1rem;">
+                        <span id="repostCharCount{{ post.id }}">0</span>/280
+                    </div>
+
+                    <hr style="border: none; border-top: 3px solid var(--text-color); margin: 0 0 1.5rem 0;">
+
+                    <!-- Image upload section -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-color);">Add photo</div>
+                        <div style="font-size: 0.85rem; color: var(--lighter-text-color); margin-bottom: 0.75rem;">Optional — maximum 1 per post</div>
+                        <input type="file" class="filepond-repost-{{ post.id }}" name="post_image_upload">
+                        <input type="hidden" name="image_url" id="repostImageUrl{{ post.id }}">
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--lighter-text-color); margin: 0 0 1.5rem 0;">
+
+                    <!-- Original post preview -->
+                    <div style="border-left: 3px solid var(--lighter-text-color); padding-left: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; color: var(--lighter-text-color);">repeat</span>
+                            <small style="color: var(--lighter-text-color);">Reposting from</small>
+                        </div>
+                        <strong>{{ post.username }}</strong>
+                        <p class="mb-0" style="color: var(--text-color);">{{ post.content }}</p>
+                        {% if post.image_url %}
+                        <img src="{{ post.image_url }}" class="img-fluid rounded mt-2" style="max-height: 150px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    const modalEl = document.getElementById('repostModal{{ post.id }}');
+    const textarea = document.getElementById('repostQuote{{ post.id }}');
+    const counter = document.getElementById('repostCharCount{{ post.id }}');
+
+    textarea.addEventListener('input', function() {
+        counter.textContent = this.value.length;
+    });
+
+    let pondInitialized = false;
+    modalEl.addEventListener('shown.bs.modal', function() {
+        if (!pondInitialized) {
+            FilePondComponents.createPostImage('.filepond-repost-{{ post.id }}', 'repostImageUrl{{ post.id }}');
+            pondInitialized = true;
+        }
+    });
+})();
+</script>

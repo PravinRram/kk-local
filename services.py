@@ -280,6 +280,10 @@ class PostService:
     def delete(self, post_id):
         post = self.session.query(Post).filter_by(id=post_id).first()
         if post:
+            if post.is_repost and post.original_post_id:
+                original = self.session.query(Post).filter_by(id=post.original_post_id).first()
+                if original and original.reposts_count > 0:
+                    original.reposts_count -= 1
             self.session.delete(post)
             self.session.commit()
             return True

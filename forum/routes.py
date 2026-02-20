@@ -167,20 +167,36 @@ def like_post(post_id):
 def repost(post_id):
     sess = db.session
     post_service = PostService(sess)
-    
+
     quote_content = request.form.get('quote_content', '').strip()
+    image_url = request.form.get('image_url', '').strip()
     is_quote = len(quote_content) > 0
-    
+
+    # Validate quote length
+    if len(quote_content) > 280:
+        flash('Quote comment cannot exceed 280 characters', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    # Moderation check
+    if is_quote or image_url:
+        text_fields = {'Quote Content': quote_content} if is_quote else {}
+        image_path = image_url.lstrip('/') if image_url else None
+        moderation_result = moderate_content(text_fields=text_fields, image_path=image_path)
+        if moderation_result['flagged']:
+            return render_template('moderation_error.html',
+                                   error_message=moderation_result['message'],
+                                   return_url=request.referrer or url_for('forum.feed'))
+
     new_post_id = post_service.create(
         session['user_id'],
         quote_content if is_quote else '',
         None,
-        None,
+        image_url if image_url else None,
         True,
         post_id,
         quote_content if is_quote else None
     )
-    
+
     flash('Post reposted successfully', 'success')
     return redirect(url_for('forum.feed'))
 
@@ -566,6 +582,7 @@ def api_search():
             user_dict = user_service._user_to_dict(user)
             user_dict['type'] = 'user'
             user_dict['age'] = user_service.calculate_age(user.date_of_birth)
+            user_dict['age_group'] = user.age_group
             results.append(user_dict)
     
     if search_type in ['all', 'forums']:
