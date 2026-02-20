@@ -193,6 +193,7 @@ class UserService:
             'email': user.email,
             'password_hash': user.password_hash,
             'birthdate': user.date_of_birth,
+            'age_group': user.age_group,
             'profile_picture': profile_pic,
             'interests': [h.name for h in user.hobbies],
             'bio': user.bio,

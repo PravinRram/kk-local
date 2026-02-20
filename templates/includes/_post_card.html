@@ -1,7 +1,10 @@
-<div class="post-card">
+<div class="post-card" onclick="window.location.href='{{ url_for('forum.post_detail', post_id=post.id) }}'" style="cursor: pointer;">
     <div class="d-flex">
-        <img src="{{ avatar_url(post.profile_picture) }}" 
-             class="user-avatar me-3" alt="{{ post.username }}">
+        <a href="{{ url_for('auth.profile_public', username=post.username) }}" 
+            class="me-3" onclick="event.stopPropagation()">
+            <img src="{{ avatar_url(post.profile_picture) }}" 
+                class="user-avatar" alt="{{ post.username }}">
+        </a>
         <div class="flex-grow-1">
             <div class="d-flex align-items-center justify-content-between">
                 <div>  
@@ -38,7 +41,7 @@
 
                 <!-- Moderator/Delete Menu -->
                 {% if (is_moderator|default(false) or session.get('is_admin')) and post.user_id != session.get('user_id') %}
-                <div class="dropdown">
+                <div class="dropdown" onclick="event.stopPropagation()">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                             type="button" data-bs-toggle="dropdown">
                         <span class="material-symbols-outlined">more_vert</span>
@@ -57,7 +60,7 @@
 
                 <!-- Delete Button (only for post owner) -->
                 {% if session.get('user_id') == post.user_id %}
-                <div class="dropdown">
+                <div class="dropdown" onclick="event.stopPropagation()">
                     <button class="btn btn-sm" type="button" data-bs-toggle="dropdown">
                         <span class="material-symbols-outlined">more_vert</span>
                     </button>
@@ -78,7 +81,7 @@
                     <p class="mb-2">{{ post.content }}</p>
                     
                     {% if post.image_url %}
-                    <div class="post-image-container" data-bs-toggle="modal" data-bs-target="#imageModal{{ post.id }}">
+                    <div class="post-image-container" data-bs-toggle="modal" data-bs-target="#imageModal{{ post.id }}" onclick="event.stopPropagation()">
                         <img src="{{ post.image_url }}" alt="Post image">
                     </div>
 
@@ -107,7 +110,7 @@
                     
                     <!-- Repost/Quote Repost -->
                     {% if post.is_repost and post.original_post_id %}
-                    <div class="border border-2 rounded p-3 mt-2" style="border-color: var(--border-color) !important;">
+                    <div class="border border-2 rounded p-3 mt-2" style="border-color: var(--border-color) !important;" onclick="event.stopPropagation()">
                         <div class="d-flex align-items-center mb-2">
                             <span class="material-symbols-outlined text-secondary me-1">repeat</span>
                             <small class="text-muted">Reposted from:</small>

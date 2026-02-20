@@ -170,6 +170,9 @@
     color: var(--text-color);
     margin-bottom: 8px;
     font-size: 1.1em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .forum-carousel-description {

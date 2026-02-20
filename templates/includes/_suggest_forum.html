@@ -12,12 +12,8 @@
                     <div class="forum-carousel-banner forum-carousel-banner-default"></div>
                     {% endif %}
                     <div class="forum-carousel-content">
-                        <h6 class="forum-carousel-title">
-                            {{ forum.name[:50] }}{% if forum.name|length > 50 %}...{% endif %}
-                        </h6>
-                        <p class="forum-carousel-description">
-                            {{ forum.description[:80] }}{% if forum.description|length > 80 %}...{% endif %}
-                        </p>
+                        <h6 class="forum-carousel-title">{{ forum.name }}</h6>
+                        <p class="forum-carousel-description">{{ forum.description }}</p>
                         <div class="forum-carousel-meta">
                             <small class="text-muted">
                                 <span class="material-symbols-outlined">group</span> {{ forum.member_count }} members

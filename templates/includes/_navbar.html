@@ -21,8 +21,13 @@
                 </a>
 
                 <a href="{{ url_for('forum.notifications') }}" class="nav-item-button {% if current_endpoint in ['forum.notifications', 'notifications'] %}active{% endif %}">
-                    <div class="nav-item-icon">
+                    <div class="nav-item-icon position-relative" style="display: inline-flex;">
                         <span class="material-symbols-outlined">notifications</span>
+                        {% if notification_count %}
+                        <span class="position-absolute top-0 start-100 translate-middle p-2 bg-warning border border-dark rounded-circle">
+                            <span class="visually-hidden">{{ notification_count }} new notifications</span>
+                        </span>
+                        {% endif %}
                     </div>
                     <div class="nav-item-text">Notifications</div>
                 </a>

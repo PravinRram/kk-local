@@ -15,8 +15,11 @@
         <!-- Post -->
         <div class="post-card pt-0">
             <div class="d-flex">
-                <img src="{{ avatar_url(post.profile_picture) }}" 
-                     class="user-avatar me-3" alt="{{ post.username }}">
+                <a href="{{ url_for('auth.profile_public', username=post.username) }}" 
+                    class="me-3">
+                    <img src="{{ avatar_url(post.profile_picture) }}" 
+                        class="user-avatar" alt="{{ post.username }}">
+                </a>
                 <div class="flex-grow-1">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>

@@ -214,6 +214,14 @@ def add_comment(post_id):
             flash(error, 'error')
         return redirect(url_for('forum.post_detail', post_id=post_id))
     
+    moderation_result = moderate_content(
+        text_fields={'Comment': content}
+    )
+    if moderation_result['flagged']:
+        return render_template('moderation_error.html',
+                               error_message=moderation_result['message'],
+                               return_url=url_for('forum.post_detail', post_id=post_id))
+    
     comment_service.create(post_id, session['user_id'], content)
     flash('Comment added successfully', 'success')
     return redirect(url_for('forum.post_detail', post_id=post_id))
@@ -429,7 +437,21 @@ def update_forum(forum_id):
         for error in errors:
             flash(error, 'error')
         return redirect(url_for('forum.forum_detail', forum_id=forum_id))
-    
+
+    # Content Moderation
+    text_fields = {
+        'Forum Name': name,
+        'Description': description,
+        'Rules': rules
+    }
+    image_check_path = banner_path.replace('/static/', 'static/') if banner_path else None
+    moderation_result = moderate_content(text_fields=text_fields, image_path=image_check_path)
+
+    if moderation_result['flagged']:
+        return render_template('moderation_error.html',
+                               error_message=moderation_result['message'],
+                               return_url=url_for('forum.forum_detail', forum_id=forum_id))
+
     forum_service.update(forum_id, name, description, rules, is_private, interest_tags, banner_path)
     flash('Forum updated successfully', 'success')
     return redirect(url_for('forum.forum_detail', forum_id=forum_id))
