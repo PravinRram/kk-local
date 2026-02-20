@@ -96,6 +96,12 @@ const FilePondComponents = {
                         }
                         return response;
                     }
+                },
+                load: (source, load, error, progress, abort) => {
+                    fetch(source)
+                        .then(res => res.blob())
+                        .then(load)
+                        .catch(error);
                 }
             },
             credits: false

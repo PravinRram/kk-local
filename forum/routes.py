@@ -49,10 +49,11 @@ def feed():
     posts = [post_service._post_to_dict(p) for p in posts_query]
     
     for post in posts:
-            # Calculate age
+        # Calculate age
         post_user = User.query.get(post['user_id'])
         if post_user:
                 post['age'] = user_service.calculate_age(post_user.date_of_birth)
+                post['age_group'] = post_user.age_group if post_user else None
         else:
                 post['age'] = 0
         post['is_liked'] = post_service.is_liked_by(post['id'], session['user_id'])
@@ -137,12 +138,14 @@ def post_detail(post_id):
     
     post_user = User.query.get(post['user_id'])
     post['age'] = user_service.calculate_age(post_user.date_of_birth) if post_user else 0
+    post['age_group'] = post_user.age_group if post_user else None
     post['is_liked'] = post_service.is_liked_by(post_id, session['user_id'])
     
     comments = comment_service.get_by_post(post_id)
     for comment in comments:
         comment_user = User.query.get(comment['user_id'])
         comment['age'] = user_service.calculate_age(comment_user.date_of_birth) if comment_user else 0
+        comment['age_group'] = comment_user.age_group if comment_user else None
     
     return render_template('post_detail.html', post=post, comments=comments)
 
@@ -280,12 +283,14 @@ def forum_detail(forum_id):
     for post in posts:
         post_user = User.query.get(post['user_id'])
         post['age'] = user_service.calculate_age(post_user.date_of_birth) if post_user else 0
+        post['age_group'] = post_user.age_group if post_user else None
         post['is_liked'] = post_service.is_liked_by(post['id'], session['user_id'])
 
     forum['moderators'] = forum_service.get_moderators(forum_id)
     
     return render_template('forum_detail.html', forum=forum, posts=posts,
-                            is_member=is_member, is_moderator=is_moderator, is_banned=is_banned, is_owner=is_owner)
+                            is_member=is_member, is_moderator=is_moderator, is_banned=is_banned, 
+                            is_owner=is_owner, interests_list=Config.INTERESTS)
 
 @forum_bp.route('/forum/create', methods=['GET', 'POST'])
 @login_required
@@ -530,7 +535,8 @@ def hashtag_posts(hashtag):
     
     for post in posts:
         post_user = User.query.get(post['user_id'])
-        post['age'] = user_service.calculate_age(post_user.birthdate) if post_user else 0
+        post['age'] = user_service.calculate_age(post_user.date_of_birth) if post_user else 0
+        post['age_group'] = post_user.age_group if post_user else None
         post['is_liked'] = post_service.is_liked_by(post['id'], session['user_id'])
     
     return render_template('hashtag_posts.html', hashtag=hashtag, posts=posts, current_filter=filter_by)

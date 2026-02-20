@@ -239,6 +239,25 @@
             document.getElementById(tabName + '-content').style.display = 'block';
         });
     });
+
+    // filepond for editing forum bannerS
+    document.getElementById('editForumModal').addEventListener('shown.bs.modal', function () {
+        const input = document.querySelector('#editForumModal .filepond-forum-banner');
+        if (!input.classList.contains('filepond--hopper')) {
+            const existingBanner = input.dataset.banner;
+
+            window.editForumBannerPond = FilePondComponents.createForumBanner(
+                '#editForumModal .filepond-forum-banner',
+                'forum_banner'
+            );
+
+            // Pre-load the existing banner into FilePond if one exists
+            if (existingBanner) {
+                document.getElementById('forum_banner').value = existingBanner; // keep hidden input populated
+                window.editForumBannerPond.addFile(existingBanner, { type: 'local' });
+            }
+        }
+    }, { once: true });
 </script>
 {% endblock %}
 {% endblock %}

@@ -94,8 +94,16 @@ function displaySearchResults(results) {
         forums.forEach(forum => {
             html += `
                 <div class="search-result-item" onclick="window.location.href='/forum/${forum.id}'">
-                    <strong>${forum.name}</strong>
-                    <p class="mb-0 small text-muted">${forum.member_count} members</p>
+                    <div class="d-flex align-items-center gap-2">
+                        ${forum.banner
+                            ? `<img src="${forum.banner}" class="rounded forum-banner-small">`
+                            : `<div class="rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 28px; background: var(--kk-gradient);"><span class="material-symbols-outlined" style="font-size: 16px; color: white;">forum</span></div>`
+                        }
+                        <div>
+                            <strong>${forum.name}</strong>
+                            <p class="mb-0 small text-muted">${forum.member_count} members</p>
+                        </div>
+                    </div>
                 </div>
             `;
         });

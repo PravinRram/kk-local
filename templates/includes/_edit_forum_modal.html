@@ -29,30 +29,25 @@
                     
                     <div class="mb-3">
                         <label for="forum_banner" class="form-label">Forum Banner</label>
-                        {% if forum.banner %}
-                        <img src="{{ forum.banner }}" class="img-fluid mb-2" style="max-height: 150px;">
-                        {% endif %}
-                        <input type="file" class="filepond-forum-banner" name="forum_banner_upload" />
+                        <input type="file" class="filepond-forum-banner" name="forum_banner_upload" data-banner="{{ forum.banner or '' }}" />
                         <input type="hidden" id="forum_banner" name="banner">
-                        <div class="form-text">Upload a banner image (recommended: 1200x300px)</div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Interest Tags (Max 7)</label>
-                        <div class="row">
-                            {% set all_tags = ['Gaming', 'Technology', 'Sports', 'Music', 'Art', 'Food', 'Travel', 
-                                            'Fitness', 'Movies', 'Books', 'Fashion', 'Science', 'Business', 
-                                            'Education', 'Politics', 'Comedy', 'Photography', 'Nature', 'Pets', 'Other'] %}
-                            {% for tag in all_tags %}
-                            <div class="col-6 col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input interest-tag-checkbox" type="checkbox" 
-                                        name="interest_tags" value="{{ tag }}" id="edit_tag_{{ loop.index }}"
-                                        {% if tag in forum.interest_tags %}checked{% endif %}>
-                                    <label class="form-check-label" for="edit_tag_{{ loop.index }}">{{ tag }}</label>
-                                </div>
-                            </div>
+                        <input type="text" class="form-control mb-2" placeholder="Search interests..." id="edit_tag_search">
+                        <div class="tag-grid" id="edit_tag_grid">
+                            {% for tag in interests_list %}
+                            <label class="tag" data-tag-name="{{ tag|lower }}">
+                                <input type="checkbox" name="interest_tags" value="{{ tag }}" 
+                                    class="edit-interest-tag-checkbox"
+                                    {% if tag in forum.interest_tags %}checked{% endif %}>
+                                <span>{{ tag }}</span>
+                            </label>
                             {% endfor %}
+                        </div>
+                        <div id="edit_interest_tag_error" class="text-danger small mt-2" style="display: none;">
+                            You can select up to 7 interest tags only.
                         </div>
                     </div>
                     
@@ -76,3 +71,25 @@
         </div>
     </div>
 </form>
+
+<script>
+document.querySelectorAll('.edit-interest-tag-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const checked = document.querySelectorAll('.edit-interest-tag-checkbox:checked').length;
+        const error = document.getElementById('edit_interest_tag_error');
+        if (checked > 7) {
+            this.checked = false;
+            error.style.display = 'block';
+        } else {
+            error.style.display = 'none';
+        }
+    });
+});
+
+document.getElementById('edit_tag_search').addEventListener('input', function() {
+    const term = this.value.trim().toLowerCase();
+    document.querySelectorAll('#edit_tag_grid [data-tag-name]').forEach(label => {
+        label.style.display = label.dataset.tagName.includes(term) ? 'inline-flex' : 'none';
+    });
+});
+</script>

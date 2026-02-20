@@ -9,45 +9,24 @@
             <form method="POST" action="{{ url_for('forum.update_moderators', forum_id=forum.id) }}">
                 {{ csrf_token() }}
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Current Moderators</label>
-                        <div class="row" id="current_moderators">
-                            {% for moderator in forum.moderators %}
-                            {% if moderator.id != forum.creator_id %}
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-center">
-                                            <img src="{{ avatar_url(moderator.profile_picture) }}" 
-                                                class="rounded-circle me-3" 
-                                                style="width: 50px; height: 50px; object-fit: cover;">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-0">{{ moderator.username }}</h6>
-                                            </div>
-                                            <button type="button" class="btn btn-sm btn-danger remove-mod-btn" 
-                                                    data-mod-id="{{ moderator.id }}">
-                                                <span class="material-symbols-outlined">close</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
+
                     <div class="mb-3">
                         <label for="mod_search" class="form-label">Add Moderators</label>
-                        <div class="search-input-wrapper">
+                        <div class="search-input-wrapper" onclick="document.getElementById('mod_search').focus()">
                             <span class="material-symbols-outlined search-icon">search</span>
-                            <input type="text" id="mod_search" class="form-control search-input-with-icon" 
+                            <input type="text" id="mod_search" class="form-control search-input-with-icon"
                                 placeholder="Search people you follow...">
+                            <button class="search-clear-btn" id="clearModSearchBtn" onclick="clearModSearch(event)" style="display: none;">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
                         </div>
                         <div id="mod_search_results" class="search-results-box mt-2"></div>
-                        <div id="selected_new_mods" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        <div class="form-text mb-2">You can only add people you follow</div>
+
+                        <!-- Selected + existing mods shown as avatars -->
+                        <div id="selected_mods" class="d-flex flex-wrap gap-2 mt-2"></div>
                     </div>
-                    
+
                     <input type="hidden" id="mod_ids_input" name="moderator_ids">
                 </div>
                 <div class="modal-footer">
@@ -61,94 +40,173 @@
     </div>
 </div>
 
+<style>
+    #mod_search_results.search-results-box {
+        border: 3px solid var(--text-color);
+        border-radius: 15px;
+        background-color: transparent;
+        max-height: 300px;
+        overflow-y: auto;
+        transition: border-color 0.3s;
+    }
+
+    #mod_search_results.search-results-box.active {
+        display: block;
+        border-color: var(--primary-color);
+    }
+
+    #mod_search_results .search-result-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    #mod_search_results .search-result-item:hover {
+        background-color: var(--hover-on-bg-color);
+    }
+
+    .moderator-avatar {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .moderator-avatar img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary-color);
+    }
+
+    .moderator-avatar .remove-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid white;
+    }
+
+    .moderator-avatar:hover .remove-btn {
+        display: flex;
+    }
+</style>
+
 <script>
-    // Moderator management functionality
-    let managedModIds = [
-        {% if forum.moderators %}
-            {% for m in forum.moderators %}
-                {% if m.id != forum.creator_id %}
-                    {{ m.id }}{% if not loop.last %},{% endif %}
-                {% endif %}
-            {% endfor %}
-        {% endif %}
+    // Pre-populate with existing moderators (excluding creator)
+    let managedMods = [
+        {% for m in forum.moderators %}
+            {% if m.id != forum.creator_id %}
+            {
+                id: {{ m.id }},
+                username: "{{ m.username }}",
+                profilePicture: "{{ avatar_url(m.profile_picture) }}"
+            }{% if not loop.last %},{% endif %}
+            {% endif %}
+        {% endfor %}
     ];
 
-    document.querySelectorAll('.remove-mod-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const modId = parseInt(this.dataset.modId);
-            managedModIds = managedModIds.filter(id => id !== modId);
-            this.closest('.col-md-6').remove();
-            updateModIdsInput();
-        });
-    });
+    function renderManagedMods() {
+        const container = document.getElementById('selected_mods');
+        container.innerHTML = managedMods.map(mod => `
+            <div class="moderator-avatar" title="${mod.username}">
+                <img src="${mod.profilePicture}" alt="${mod.username}">
+                <div class="remove-btn" onclick="removeManageMod(${mod.id})">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('mod_ids_input').value = managedMods.map(m => m.id).join(',');
+    }
 
-    // Search for new moderators (reuse existing moderator search logic)
+    function removeManageMod(id) {
+        managedMods = managedMods.filter(m => m.id !== id);
+        renderManagedMods();
+    }
+
+    function addManageMod(id, username, profilePicture) {
+        if (managedMods.find(m => m.id === id) || id === {{ forum.creator_id }}) return;
+        managedMods.push({ id, username, profilePicture });
+        renderManagedMods();
+        // Clear search
+        document.getElementById('mod_search').value = '';
+        document.getElementById('mod_search_results').innerHTML = '';
+        document.getElementById('mod_search_results').classList.remove('active');
+        document.getElementById('clearModSearchBtn').style.display = 'none';
+    }
+
+    // Initialise on load
+    renderManagedMods();
+
+    // Search
     let modSearchTimeout;
-    const modSearch = document.getElementById('mod_search');
-    if (modSearch) {
-        modSearch.addEventListener('input', function() {
+    const modSearchInput = document.getElementById('mod_search');
+    const modResultsBox = document.getElementById('mod_search_results');
+    const clearModSearchBtn = document.getElementById('clearModSearchBtn');
+
+    if (modSearchInput) {
+        modSearchInput.addEventListener('input', function() {
             clearTimeout(modSearchTimeout);
             const query = this.value.trim();
-            
-            if (query.length < 2) {
-                document.getElementById('mod_search_results').style.display = 'none';
+            clearModSearchBtn.style.display = query.length > 0 ? 'flex' : 'none';
+
+            if (query.length < 1) {
+                modResultsBox.innerHTML = '';
+                modResultsBox.classList.remove('active');
                 return;
             }
-            
+
             modSearchTimeout = setTimeout(() => {
-                fetch(`/search/following?query=${encodeURIComponent(query)}`)
+                fetch(`/api/search-following?q=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(users => {
-                        const resultsBox = document.getElementById('mod_search_results');
                         if (users.length === 0) {
-                            resultsBox.innerHTML = '<div class="p-2 text-muted">No users found</div>';
+                            modResultsBox.innerHTML = '<p class="text-muted small px-3 py-2">No results found</p>';
                         } else {
-                            resultsBox.innerHTML = users.map(user => `
-                                <div class="search-result-item" data-user-id="${user.id}" 
-                                    data-username="${user.username}" data-avatar="${user.profile_picture}">
-                                    <img src="${user.profile_picture}" class="rounded-circle me-2" 
-                                        style="width: 40px; height: 40px; object-fit: cover;">
-                                    <span>${user.username}</span>
-                                </div>
-                            `).join('');
-                            
-                            resultsBox.querySelectorAll('.search-result-item').forEach(item => {
-                                item.addEventListener('click', function() {
-                                    const userId = parseInt(this.dataset.userId);
-                                    if (!managedModIds.includes(userId) && userId !== {{ forum.creator_id }}) {
-                                        managedModIds.push(userId);
-                                        addModAvatar(userId, this.dataset.username, this.dataset.avatar);
-                                        updateModIdsInput();
-                                    }
-                                    modSearch.value = '';
-                                    resultsBox.style.display = 'none';
-                                });
-                            });
+                            modResultsBox.innerHTML = users
+                                .filter(u => !managedMods.find(m => m.id === u.id) && u.id !== {{ forum.creator_id }})
+                                .map(user => `
+                                    <div class="search-result-item d-flex align-items-center"
+                                        onclick="addManageMod(${user.id}, '${user.username}', '${user.profile_picture}')">
+                                        <img src="${user.profile_picture}" class="rounded-circle me-2"
+                                            style="width: 40px; height: 40px; object-fit: cover;">
+                                        <div>
+                                            <strong>${user.username}</strong>
+                                            <span class="age-badge ms-1">${user.age} years</span>
+                                        </div>
+                                    </div>
+                                `).join('');
                         }
-                        resultsBox.style.display = 'block';
+                        modResultsBox.classList.add('active');
                     });
             }, 300);
         });
-    }
 
-    function addModAvatar(userId, username, avatar) {
-        const container = document.getElementById('selected_new_mods');
-        const avatarDiv = document.createElement('div');
-        avatarDiv.className = 'moderator-avatar';
-        avatarDiv.innerHTML = `
-            <img src="${avatar}" alt="${username}">
-            <div class="remove-btn" data-user-id="${userId}">×</div>
-        `;
-        container.appendChild(avatarDiv);
-        
-        avatarDiv.querySelector('.remove-btn').addEventListener('click', function() {
-            managedModIds = managedModIds.filter(id => id !== userId);
-            avatarDiv.remove();
-            updateModIdsInput();
+        modSearchInput.addEventListener('focus', function() {
+            if (this.value.trim().length > 0) modResultsBox.classList.add('active');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#manageModeratorsModal')) {
+                modResultsBox.classList.remove('active');
+            }
         });
     }
 
-    function updateModIdsInput() {
-        document.getElementById('mod_ids_input').value = managedModIds.join(',');
+    function clearModSearch(event) {
+        event.stopPropagation();
+        modSearchInput.value = '';
+        modResultsBox.innerHTML = '';
+        modResultsBox.classList.remove('active');
+        clearModSearchBtn.style.display = 'none';
+        modSearchInput.focus();
     }
 </script>

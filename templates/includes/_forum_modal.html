@@ -48,18 +48,13 @@
                     
                     <div class="mb-3">
                         <label class="form-label">Interest Tags * (Select up to 7)</label>
-                        <div class="form-text mb-2">Select interests related to your forum to help users discover it</div>
-                        <div class="row">
+                        <input type="text" class="form-control mb-2" placeholder="Search interests..." id="create_tag_search">
+                        <div class="tag-grid" id="create_tag_grid">
                             {% for interest in interests_list %}
-                            <div class="col-md-4 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input interest-tag-checkbox" type="checkbox" name="interest_tags" 
-                                           value="{{ interest }}" id="modal_tag{{ loop.index }}">
-                                    <label class="form-check-label" for="modal_tag{{ loop.index }}">
-                                        {{ interest }}
-                                    </label>
-                                </div>
-                            </div>
+                            <label class="tag" data-tag-name="{{ interest|lower }}">
+                                <input type="checkbox" name="interest_tags" value="{{ interest }}" class="interest-tag-checkbox">
+                                <span>{{ interest }}</span>
+                            </label>
                             {% endfor %}
                         </div>
                         <div id="interest_tag_error" class="text-danger small mt-2" style="display: none;">
@@ -165,18 +160,25 @@
 </style>
 
 <script>
-// Interest tag limit
-document.querySelectorAll('.interest-tag-checkbox').forEach(checkbox => {
+// interest tag limit check
+document.querySelectorAll('#createForumModal .interest-tag-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', function() {
-        const checked = document.querySelectorAll('.interest-tag-checkbox:checked').length;
+        const checked = document.querySelectorAll('#createForumModal .interest-tag-checkbox:checked').length;
         const error = document.getElementById('interest_tag_error');
-        
         if (checked > 7) {
             this.checked = false;
             error.style.display = 'block';
         } else {
             error.style.display = 'none';
         }
+    });
+});
+
+// tag search for create modal:
+document.getElementById('create_tag_search').addEventListener('input', function() {
+    const term = this.value.trim().toLowerCase();
+    document.querySelectorAll('#create_tag_grid [data-tag-name]').forEach(label => {
+        label.style.display = label.dataset.tagName.includes(term) ? 'inline-flex' : 'none';
     });
 });
 

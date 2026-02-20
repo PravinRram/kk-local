@@ -180,10 +180,12 @@ class UserService:
         return [self._user_to_dict(f) for f in following]
     
     def _user_to_dict(self, user):
-        profile_pic = user.profile_picture
+        profile_pic = user.profile_picture_url or user.profile_picture
         if not profile_pic or profile_pic.strip() == '':
             profile_pic = 'img/default_avatar.png'
-        # Handle interests safely
+        # Prefix relative paths so they resolve correctly as URLs
+        if profile_pic and not profile_pic.startswith(('/', 'http', 'data:')):
+            profile_pic = f'/static/{profile_pic}'
         
         return {
             'id': user.id,
@@ -329,6 +331,7 @@ class PostService:
                     'username': original_user.username,
                     'profile_picture': original_profile_pic,
                     'age': original_age,
+                    'age_group': original_user.age_group,
                     'content': original_post.content,
                     'image_url': original_post.image_url,
                     'created_at': original_post.created_at
@@ -352,6 +355,7 @@ class PostService:
             'username': user.username,
             'profile_picture': profile_pic,
             'birthdate': user.date_of_birth,
+            'age_group': user.age_group,
             'forum_name': forum.name if forum else None,
             'forum_banner': forum.banner if forum else None
         }

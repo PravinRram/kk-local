@@ -21,7 +21,13 @@
                                 <a href="{{ url_for('auth.profile_public', username=post.username) }}" class="text-decoration-none">
                                     <strong>{{ post.username }}</strong>
                                 </a>
-                                <span class="age-badge ms-2">{{ post.age }} years</span>
+                                <span class="age-badge ms-2">
+                                    {% if post.age_group %}
+                                        {{ post.age_group | capitalize }}
+                                    {% else %}
+                                        {{ post.age }} years
+                                    {% endif %}
+                                </span>
                                 {% if show_forum_name|default(true) and post.forum_name %}
                                 <span class="ms-2 text-muted d-inline-flex align-items-center gap-2">
                                     in 
@@ -131,7 +137,13 @@
                                         class="text-decoration-none">
                                             <strong>{{ post.original_post.username }}</strong>
                                         </a>
-                                        <span class="age-badge ms-2">{{ post.original_post.age }} years</span>
+                                        <span class="age-badge ms-2">
+                                            {% if comment.age_group %}
+                                                {{ comment.age_group | capitalize }}
+                                            {% else %}
+                                                {{ comment.age }} years
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     <small class="text-muted">{{ post.original_post.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
                                 </div>
