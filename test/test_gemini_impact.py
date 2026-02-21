@@ -92,7 +92,7 @@ def build_sample_event() -> dict:
 
 def main():
     # Use env var if available, otherwise use hardcoded key
-    api_key = os.getenv("GEMINI_API_KEY") or "AIzaSyBNs4bD8nBl07vriQBTDeeK9d2OViNpgGc"
+    api_key = os.getenv("GEMINI_API_KEY") or "no"
     
     if not api_key:
         print("Missing GEMINI_API_KEY environment variable.")
