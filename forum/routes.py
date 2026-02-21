@@ -118,7 +118,7 @@ def create_post():
     
     post_id = post_service.create(session['user_id'], content, forum_id, image_url, hashtags=hashtags)
     
-    socketio.emit('new_post', {'post_id': post_id}, namespace='/')
+    socketio.emit('post_update', {'post_id': post_id}, room='feed', namespace='/')
     flash('Post created successfully', 'success')
     return redirect(request.referrer or url_for('forum.feed'))
 
@@ -129,6 +129,7 @@ def post_detail(post_id):
     user_service = UserService(sess)
     post_service = PostService(sess)
     comment_service = CommentService(sess)
+    forum_service = ForumService(sess)
     
     post = post_service.get_by_id(post_id)
     
@@ -141,25 +142,44 @@ def post_detail(post_id):
     post['age_group'] = post_user.age_group if post_user else None
     post['is_liked'] = post_service.is_liked_by(post_id, session['user_id'])
     
+    is_moderator = False
+    if post.get('forum_id'):
+        is_moderator = forum_service.is_moderator(post['forum_id'], session['user_id'])
+    
     comments = comment_service.get_by_post(post_id)
     for comment in comments:
         comment_user = User.query.get(comment['user_id'])
         comment['age'] = user_service.calculate_age(comment_user.date_of_birth) if comment_user else 0
         comment['age_group'] = comment_user.age_group if comment_user else None
+        comment['is_liked'] = comment_service.is_liked_by(comment['id'], session['user_id'])
     
-    return render_template('post_detail.html', post=post, comments=comments)
+    return render_template('post_detail.html', post=post, comments=comments, is_moderator=is_moderator)
 
 @forum_bp.route('/post/<int:post_id>/like', methods=['POST'])
 @login_required
 def like_post(post_id):
     sess = db.session
     post_service = PostService(sess)
-    
-    if post_service.is_liked_by(post_id, session['user_id']):
+    notif_service = NotificationService(sess)
+
+    post = post_service.get_by_id(post_id)
+    already_liked = post_service.is_liked_by(post_id, session['user_id'])
+
+    if already_liked:
         post_service.unlike(post_id, session['user_id'])
     else:
         post_service.like(post_id, session['user_id'])
-    
+        # Notify post owner (not yourself)
+        if post and post['user_id'] != session['user_id']:
+            liker = User.query.get(session['user_id'])
+            notif_service.create(
+                post['user_id'],
+                'post_activity',
+                f'@{liker.username} liked your post.',
+                related_id=post_id
+            )
+            socketio.emit('new_notification', {}, room=f'user_{post["user_id"]}', namespace='/')
+
     return jsonify({'success': True})
 
 @forum_bp.route('/post/<int:post_id>/repost', methods=['POST'])
@@ -167,6 +187,7 @@ def like_post(post_id):
 def repost(post_id):
     sess = db.session
     post_service = PostService(sess)
+    notif_service = NotificationService(sess)
 
     quote_content = request.form.get('quote_content', '').strip()
     image_url = request.form.get('image_url', '').strip()
@@ -197,6 +218,17 @@ def repost(post_id):
         quote_content if is_quote else None
     )
 
+    original_post = post_service.get_by_id(post_id)
+    if original_post and original_post['user_id'] != session['user_id']:
+        reposter = User.query.get(session['user_id'])
+        notif_service.create(
+            original_post['user_id'],
+            'post_activity',
+            f'@{reposter.username} reposted your post.',
+            related_id=new_post_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{original_post["user_id"]}', namespace='/')
+
     flash('Post reposted successfully', 'success')
     return redirect(url_for('forum.feed'))
 
@@ -205,26 +237,88 @@ def repost(post_id):
 def add_comment(post_id):
     sess = db.session
     comment_service = CommentService(sess)
-    
+    post_service = PostService(sess)
+    notif_service = NotificationService(sess)
+
     content = request.form.get('content', '').strip()
-    
+
     errors = comment_service.validate_comment(content)
     if errors:
         for error in errors:
             flash(error, 'error')
         return redirect(url_for('forum.post_detail', post_id=post_id))
-    
-    moderation_result = moderate_content(
-        text_fields={'Comment': content}
-    )
+
+    moderation_result = moderate_content(text_fields={'Comment': content})
     if moderation_result['flagged']:
         return render_template('moderation_error.html',
                                error_message=moderation_result['message'],
                                return_url=url_for('forum.post_detail', post_id=post_id))
-    
+
     comment_service.create(post_id, session['user_id'], content)
+
+    # Notify post owner
+    post = post_service.get_by_id(post_id)
+    if post and post['user_id'] != session['user_id']:
+        commenter = User.query.get(session['user_id'])
+        notif_service.create(
+            post['user_id'],
+            'post_activity',
+            f'@{commenter.username} commented on your post: "{content[:50]}"',
+            related_id=post_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{post["user_id"]}', namespace='/')
+
     flash('Comment added successfully', 'success')
     return redirect(url_for('forum.post_detail', post_id=post_id))
+
+@forum_bp.route('/comment/<int:comment_id>/like', methods=['POST'])
+@login_required
+def like_comment(comment_id):
+    sess = db.session
+    comment_service = CommentService(sess)
+    
+    if comment_service.is_liked_by(comment_id, session['user_id']):
+        comment_service.unlike(comment_id, session['user_id'])
+    else:
+        comment_service.like(comment_id, session['user_id'])
+    
+    return jsonify({'success': True})
+
+@forum_bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    sess = db.session
+    comment_service = CommentService(sess)
+    forum_service = ForumService(sess)
+    notif_service = NotificationService(sess)
+
+    comment = comment_service.get_by_id(comment_id)
+    if not comment:
+        flash('Comment not found', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    is_owner = comment['user_id'] == session['user_id']
+    is_admin = session.get('is_admin')
+    is_mod = comment.get('forum_id') and forum_service.is_moderator(comment['forum_id'], session['user_id'])
+
+    if not (is_owner or is_admin or is_mod):
+        flash('You do not have permission to delete this comment', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    if comment['user_id'] != session['user_id']:
+        deleter = User.query.get(session['user_id'])
+        reason = request.form.get('reason', 'No reason provided')
+        notif_service.create(
+            comment['user_id'],
+            'moderation',
+            f'Your comment was deleted by a moderator. Reason: {reason}',
+            related_id=comment['post_id']
+        )
+        socketio.emit('new_notification', {}, room=f'user_{comment["user_id"]}', namespace='/')
+
+    comment_service.delete(comment_id)
+    flash('Comment deleted successfully', 'success')
+    return redirect(request.referrer or url_for('forum.feed'))
 
 @forum_bp.route('/post/<int:post_id>/delete', methods=['POST'])
 @login_required
@@ -232,6 +326,7 @@ def delete_post(post_id):
     sess = db.session
     post_service = PostService(sess)
     forum_service = ForumService(sess)
+    notif_service = NotificationService(sess)
     
     post = post_service.get_by_id(post_id)
     
@@ -248,6 +343,18 @@ def delete_post(post_id):
         return redirect(request.referrer or url_for('forum.feed'))
     
     post_service.delete(post_id)
+
+    if post['user_id'] != session['user_id']:
+        deleter = User.query.get(session['user_id'])
+        reason = request.form.get('reason', 'No reason provided')
+        notif_service.create(
+            post['user_id'],
+            'moderation',
+            f'Your post was deleted by a moderator. Reason: {reason}',
+            related_id=post_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{post["user_id"]}', namespace='/')
+
     flash('Post deleted successfully', 'success')
     return redirect(request.referrer or url_for('forum.feed'))
 
@@ -386,11 +493,23 @@ def create_forum():
 def join_forum(forum_id):
     sess = db.session
     forum_service = ForumService(sess)
+    forum = forum_service.get_by_id(forum_id)
     
     if forum_service.join(forum_id, session['user_id']):
         flash('Joined forum successfully', 'success')
     else:
         flash('Already a member or error occurred', 'error')
+
+    if forum:
+        joiner = User.query.get(session['user_id'])
+        notif_service = NotificationService(db.session)
+        notif_service.create(
+            forum['creator_id'],
+            'forum_activity',
+            f'@{joiner.username} joined your forum "{forum["name"]}".',
+            related_id=forum_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{forum["creator_id"]}', namespace='/')
     
     return redirect(url_for('forum.forum_detail', forum_id=forum_id))
 
@@ -399,8 +518,20 @@ def join_forum(forum_id):
 def leave_forum(forum_id):
     sess = db.session
     forum_service = ForumService(sess)
+    forum = forum_service.get_by_id(forum_id)
     
     forum_service.leave(forum_id, session['user_id'])
+
+    if forum:
+        leaver = User.query.get(session['user_id'])
+        notif_service = NotificationService(db.session)
+        notif_service.create(
+            forum['creator_id'],
+            'forum_activity',
+            f'@{leaver.username} left your forum "{forum["name"]}".',
+            related_id=forum_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{forum["creator_id"]}', namespace='/')
     flash('Left forum successfully', 'success')
     return redirect(url_for('forum.forums'))
 
@@ -461,16 +592,44 @@ def update_forum(forum_id):
 def update_moderators(forum_id):
     sess = db.session
     forum_service = ForumService(sess)
-    
+    notif_service = NotificationService(sess)
+
     forum = forum_service.get_by_id(forum_id)
     if not forum or forum['creator_id'] != session['user_id']:
         flash('You do not have permission to manage moderators', 'error')
         return redirect(url_for('forum.forum_detail', forum_id=forum_id))
-    
+
     moderator_ids_str = request.form.get('moderator_ids', '')
-    moderator_ids = [int(x) for x in moderator_ids_str.split(',') if x.strip().isdigit()]
-    
-    forum_service.update_moderators(forum_id, session['user_id'], moderator_ids)
+    new_mod_ids = set(int(x) for x in moderator_ids_str.split(',') if x.strip().isdigit())
+
+    # Get current mod IDs before updating (excluding creator)
+    old_mod_ids = set(
+        m['id'] for m in forum_service.get_moderators(forum_id)
+        if m['id'] != forum['creator_id']
+    )
+
+    forum_service.update_moderators(forum_id, session['user_id'], list(new_mod_ids))
+
+    # Notify newly added mods
+    for user_id in new_mod_ids - old_mod_ids:
+        notif_service.create(
+            user_id,
+            'forum_activity',
+            f'You have been made a moderator of "{forum["name"]}".',
+            related_id=forum_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{user_id}', namespace='/')
+
+    # Notify removed mods
+    for user_id in old_mod_ids - new_mod_ids:
+        notif_service.create(
+            user_id,
+            'forum_activity',
+            f'You have been removed as a moderator of "{forum["name"]}".',
+            related_id=forum_id
+        )
+        socketio.emit('new_notification', {}, room=f'user_{user_id}', namespace='/')
+
     flash('Moderators updated successfully', 'success')
     return redirect(url_for('forum.forum_detail', forum_id=forum_id))
 
@@ -488,6 +647,54 @@ def delete_forum(forum_id):
     forum_service.delete(forum_id)
     flash('Forum deleted successfully', 'success')
     return redirect(url_for('forum.forums'))
+
+@forum_bp.route('/forum/<int:forum_id>/ban/<int:user_id>', methods=['POST'])
+@login_required
+def ban_user(forum_id, user_id):
+    sess = db.session
+    forum_service = ForumService(sess)
+    ban_service = BanService(sess)
+    notif_service = NotificationService(sess)
+
+    is_moderator = forum_service.is_moderator(forum_id, session['user_id'])
+    forum = forum_service.get_by_id(forum_id)
+
+    if not forum or not (is_moderator or session.get('is_admin')):
+        flash('You do not have permission to ban users', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    if user_id == session['user_id']:
+        flash('You cannot ban yourself', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    # Prevent mods from banning other mods/owner
+    if forum_service.is_moderator(forum_id, user_id) and not session.get('is_admin'):
+        flash('You cannot ban another moderator', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    if ban_service.is_banned(user_id, forum_id):
+        flash('User is already banned from this forum', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('A reason is required', 'error')
+        return redirect(request.referrer or url_for('forum.feed'))
+
+    ban_service.create(user_id, forum_id, session['user_id'], reason)
+
+    notif_service.create(
+        user_id,
+        'moderation',
+        f'You have been banned from "{forum["name"]}". Reason: {reason}',
+        related_id=forum_id
+    )
+    socketio.emit('new_notification', {}, room=f'user_{user_id}', namespace='/')
+    # Also remove them from the forum
+    forum_service.leave(forum_id, user_id)
+
+    flash('User banned from forum successfully', 'success')
+    return redirect(request.referrer or url_for('forum.forum_detail', forum_id=forum_id))
 
 @forum_bp.route('/upload/forum-banner', methods=['POST'])
 @login_required

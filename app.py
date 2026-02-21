@@ -176,6 +176,16 @@ def create_app(config_name="default"):
     app.register_blueprint(auth_bp)
     app.register_blueprint(forum_bp)
     app.register_blueprint(event_bp)
+ 
+    @socketio.on('join_feed')
+    def handle_join_feed(data):
+        join_room('feed')
+
+    @socketio.on('join_user_room')
+    def handle_join_user_room(data):
+        user_id = data.get('user_id')
+        if user_id:
+            join_room(f'user_{user_id}')
 
     return app
 

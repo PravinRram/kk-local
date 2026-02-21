@@ -57,6 +57,9 @@
                                 >group_add</span
                             >
                             <strong>Friend Request</strong>
+                            {% elif notification.type == 'moderation' %}
+                            <span class="material-symbols-outlined text-danger">gavel</span>
+                            <strong>Moderation Action</strong>
                             {% endif %}
 
                             <p class="mb-1 mt-2">{{ notification.content }}</p>

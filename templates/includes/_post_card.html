@@ -54,6 +54,16 @@
                                 <span class="material-symbols-outlined">delete</span> Delete Post
                             </button>
                         </li>
+                        {% if post.forum_id %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item text-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#banUserModal{{ post.id }}">
+                                <span class="material-symbols-outlined">block</span> Ban User
+                            </button>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
                 {% endif %}
@@ -183,24 +193,24 @@
     <!-- Post Actions -->
     <div class="post-actions d-flex gap-3 border-top pt-2">
         <!-- Like Button -->
-        <button class="btn btn-sm like-btn" data-post-id="{{ post.id }}" onclick="event.preventDefault(); likePost({{ post.id }})">
+        <button class="btn btn-sm like-btn" data-post-id="{{ post.id }}" onclick="event.preventDefault(); likePost({{ post.id }}); event.stopPropagation()">
             <span class="material-symbols-outlined {% if post.is_liked %}filled{% endif %}">favorite</span>
             <span>{{ post.likes_count }}</span>
         </button>
         
         <!-- Comment Button -->
-        <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" class="btn btn-sm">
+        <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" onclick="event.stopPropagation()" class="btn btn-sm">
             <span class="material-symbols-outlined">chat</span> {{ post.comments_count }}
         </a>
         
         <!-- Repost Button -->
-        <button class="btn btn-sm" data-bs-toggle="modal" 
+        <button class="btn btn-sm" data-bs-toggle="modal" onclick="event.stopPropagation()" 
                 data-bs-target="#repostModal{{ post.id }}">
             <span class="material-symbols-outlined">repeat</span> {{ post.reposts_count }}
         </button>
         
         <!-- Share Button -->
-        <button class="btn btn-sm" onclick="copyShareLink()">
+        <button class="btn btn-sm" onclick="copyShareLink()" onclick="event.stopPropagation()">
             <span class="material-symbols-outlined">share</span>
         </button>        
     </div>
@@ -209,6 +219,36 @@
 {% include "includes/_repost_modal.html" %}
 
 {% include "includes/_delete_modal.html" %}
+
+{% if (is_moderator|default(false) or session.get('is_admin')) and post.user_id != session.get('user_id') and post.forum_id %}
+<div class="modal fade" id="banUserModal{{ post.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ban User from Forum</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('forum.ban_user', forum_id=post.forum_id, user_id=post.user_id) }}">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <p>Ban <strong>{{ post.username }}</strong> from this forum? They will be removed and unable to rejoin.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for ban</label>
+                        <textarea class="form-control" name="reason" rows="3"
+                                  placeholder="Violated forum rules..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <span class="material-symbols-outlined">block</span> Ban User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <script>
 // Return focus to trigger element when image modal closes, avoiding aria-hidden warning

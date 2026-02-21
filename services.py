@@ -1,4 +1,4 @@
-from models import User, Forum, Post, Comment, Like, Notification, Ban, Follow, Hobby, forum_members, forum_moderators
+from models import User, Forum, Post, Comment, Like, Notification, Ban, Follow, Hobby, CommentLike, forum_members, forum_moderators
 # from database import User, Forum, Post, Comment, Like, Notification, Ban, follows, forum_members
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -620,6 +620,45 @@ class CommentService:
         ).all()
         return [self._comment_to_dict(c) for c in comments]
     
+    def is_liked_by(self, comment_id, user_id):
+        return self.session.query(CommentLike).filter_by(
+            comment_id=comment_id, user_id=user_id
+        ).first() is not None
+
+    def like(self, comment_id, user_id):
+        like = CommentLike(comment_id=comment_id, user_id=user_id)
+        self.session.add(like)
+        comment = self.session.query(Comment).filter_by(id=comment_id).first()
+        if comment:
+            comment.likes_count += 1
+        self.session.commit()
+
+    def unlike(self, comment_id, user_id):
+        like = self.session.query(CommentLike).filter_by(
+            comment_id=comment_id, user_id=user_id
+        ).first()
+        if like:
+            self.session.delete(like)
+            comment = self.session.query(Comment).filter_by(id=comment_id).first()
+            if comment:
+                comment.likes_count -= 1
+            self.session.commit()
+
+    def delete(self, comment_id):
+        comment = self.session.query(Comment).filter_by(id=comment_id).first()
+        if comment:
+            post = self.session.query(Post).filter_by(id=comment.post_id).first()
+            if post:
+                post.comments_count = max(0, post.comments_count - 1)
+            self.session.delete(comment)
+            self.session.commit()
+            return True
+        return False
+
+    def get_by_id(self, comment_id):
+        comment = self.session.query(Comment).filter_by(id=comment_id).first()
+        return self._comment_to_dict(comment) if comment else None
+    
     def _comment_to_dict(self, comment):
         user = comment.user
         profile_pic = user.profile_picture_url or user.profile_picture
@@ -632,7 +671,10 @@ class CommentService:
             'created_at': comment.created_at,
             'username': user.username,
             'profile_picture': profile_pic,
-            'birthdate': user.date_of_birth
+            'birthdate': user.date_of_birth,
+            'likes_count': comment.likes_count,
+            'is_liked': False,
+            'forum_id': comment.post.forum_id if comment.post else None
         }
 
 class NotificationService:

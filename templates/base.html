@@ -19,7 +19,8 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     {% block extra_css %} {% endblock %}
 </head>
-<body class="font-{{ session.get('font_size', 'medium') }} contrast-{{ session.get('contrast', 'normal') }}">
+<body class="font-{{ session.get('font_size', 'medium') }} contrast-{{ session.get('contrast', 'normal') }}"
+      data-user-id="{{ session.get('user_id', '') }}">
     <!-- New Posts Button -->
     <button id="newPostsBtn" class="btn btn-primary new-posts-btn" onclick="window.location.reload()">
         <span class="material-symbols-outlined">arrow_upward</span> New posts available

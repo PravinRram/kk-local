@@ -122,10 +122,23 @@ class Comment(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     content = Column(String(280), nullable=False)
     created_at = Column(DateTime, default=get_sgt_now)
+    likes_count = db.Column(db.Integer, default=0)
     
     # Relationships
     post = relationship('Post', back_populates='comments')
     user = relationship('User', back_populates='comments')
+    likes = db.relationship('CommentLike', back_populates='comment', cascade='all, delete-orphan')
+
+class CommentLike(Base):
+    __tablename__ = 'comment_likes'
+    
+    id = Column(Integer, primary_key=True)
+    comment_id = Column(Integer, ForeignKey('comments.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    created_at = Column(DateTime, default=get_sgt_now)
+    
+    comment = relationship('Comment', back_populates='likes')
+    user = relationship('User')
 
 class Like(Base):
     __tablename__ = 'likes'
